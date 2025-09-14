@@ -1,0 +1,44 @@
+ARG TARGET=x86_64-unknown-linux-musl
+ARG APP=s3
+ARG APP_PATH=apps/${APP}/backend
+ARG LIB_PATH=packages/rust
+
+FROM ghcr.io/profiidev/images/rust-musl-builder:main AS planner
+
+ARG APP_PATH
+ARG LIB_PATH
+
+COPY ${APP_PATH}/Cargo.toml ${APP_PATH}/
+COPY ${LIB_PATH}/Cargo.toml ${LIB_PATH}/
+COPY ./Cargo.lock ./Cargo.toml ./
+
+RUN cargo chef prepare --recipe-path recipe.json --bin positron-backend
+
+FROM ghcr.io/profiidev/images/rust-musl-builder:main AS builder
+
+ARG TARGET
+ARG APP_PATH
+ARG LIB_PATH
+ENV TARGET=$TARGET
+
+COPY --from=planner /app/recipe.json .
+
+RUN cargo chef cook --release --target $TARGET
+
+COPY ${APP_PATH}/Cargo.toml ${APP_PATH}/
+COPY ${APP_PATH}/src ${APP_PATH}/src
+COPY ${LIB_PATH}/Cargo.toml ${LIB_PATH}/
+COPY ${LIB_PATH}/src ${LIB_PATH}/src
+COPY ./Cargo.lock ./Cargo.toml ./
+
+RUN cd ${APP_PATH} && cargo build --release --target $TARGET
+RUN mv ./target/$TARGET/release/backend ./app
+
+FROM alpine
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+WORKDIR /app
+COPY --from=builder /app/app /usr/local/bin/
+
+CMD ["app"]

@@ -1,0 +1,18 @@
+[workspace]
+resolver = "3"
+members = ["apps/s3/backend", "packages/rust"]
+
+[workspace.dependencies]
+ichwilldich-lib = { path = "packages/rust" }
+
+uuid = "1.18.1"
+openssl = { version = "0.10.73", features = ["vendored"] }
+serde_json = "1.0.143"
+axum = { version = "0.8.4", features = ["macros", "ws", "tracing"] }
+axum-extra = { version = "0.10.1", features = ["cookie", "typed-header"] }
+tracing-subscriber = "0.3.20"
+clap = "4.5.47"
+tracing = "0.1.41"
+tower = "0.5.2"
+tower-http = { version = "0.6.6", features = ["cors", "trace"] }
+tokio = { version = "1.47.1", features = ["signal"] }

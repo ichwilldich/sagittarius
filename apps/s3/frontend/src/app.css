@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+@source '../../../../packages/svelte/src/**/*.{html,js,svelte,ts}';
+@import 'ichwilldich-lib/shadcn/css';

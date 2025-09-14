@@ -1,0 +1,37 @@
+services:
+  frontend:
+    image: ghcr.io/profiidev/images/node-alpine-dev:main
+    volumes:
+      - ../../:/app
+    tty: true
+    networks:
+      - nginx
+    command: npm run dev -- --host
+    working_dir: /app/apps/s3/frontend
+
+  backend:
+    image: ghcr.io/profiidev/images/rust-musl-watch:main
+    volumes:
+      - ../../:/app
+    networks:
+      - nginx
+    tty: true
+    entrypoint: ['tini', '--']
+    command: ['cargo', 'watch', '-x', 'run', '-C', 'apps/s3/backend']
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ../../nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - '5173:5173'
+    networks:
+      - nginx
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
+    depends_on:
+      - frontend
+      - backend
+
+networks:
+  nginx:

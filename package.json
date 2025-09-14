@@ -1,0 +1,12 @@
+{
+  "workspaces": [
+    "packages/svelte",
+    "apps/s3/frontend"
+  ],
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "prettier-plugin-svelte": "^3.4.0",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "svelte-check": "^4.3.1"
+  }
+}
