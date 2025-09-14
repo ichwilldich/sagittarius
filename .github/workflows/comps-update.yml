@@ -3,7 +3,7 @@ name: Components Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * 1' # Every Monday at midnight UTC
+    - cron: "0 0 * * 1" # Every Monday at midnight UTC
 
 jobs:
   update-components:
@@ -12,11 +12,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
       - uses: bahmutov/npm-install@v1
-        with:
-          useLockFile: false
 
       - name: Update components
         run: |
+          cd packages/svelte
           npx -y shadcn-svelte@latest update -ay
           npx -y prettier -cw .
           git restore package.json
@@ -24,7 +23,7 @@ jobs:
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          token: ${{ secrets.PERSONAL_TOKEN }}
           commit-message: "chore: updated components"
           branch: "chore/update-components-${{ github.run_id }}"
           title: "chore: update components"
