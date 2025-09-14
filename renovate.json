@@ -13,5 +13,6 @@
   ],
   "semanticCommitType": "chore",
   "automerge": true,
-  "automergeStrategy": "merge-commit"
+  "automergeStrategy": "merge-commit",
+  "schedule": ["0 0 * * 1"]
 }
