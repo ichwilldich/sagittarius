@@ -4,7 +4,7 @@
   "packageRules": [
     {
       "groupName": "{{manager}}",
-      "matchPackagePatterns": ["*"]
+      "matchPackageNames": ["*"]
     },
     {
       "matchPackageNames": ["/zod/", "/tailwind-variants/"],
