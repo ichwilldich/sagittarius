@@ -1,14 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
   "packageRules": [
     {
       "groupName": "{{manager}}",
-      "matchPackagePatterns": [
-        "*"
-      ]
+      "matchPackagePatterns": ["*"]
     }
   ],
   "semanticCommitType": "chore",
