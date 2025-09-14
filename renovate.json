@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "groupName": "{{manager}}",
+      "matchPackagePatterns": ["*"]
+    },
+    {
+      "matchPackageNames": ["/zod/", "/tailwind-variants/"],
+      "enabled": false
+    }
+  ],
+  "semanticCommitType": "chore",
+  "automerge": true,
+  "automergeStrategy": "merge-commit"
+}

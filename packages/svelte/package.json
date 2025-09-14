@@ -56,7 +56,7 @@
     "tailwindcss": "4.1.13",
     "tw-animate-css": "^1.3.0",
     "vaul-svelte": "^1.0.0-next.7",
-    "zod": "4.1.5"
+    "zod": "4.0.10"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "6.1.0",
