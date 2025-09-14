@@ -1,20 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
   "packageRules": [
     {
       "groupName": "{{manager}}",
-      "matchPackagePatterns": [
-        "*"
-      ]
+      "matchPackagePatterns": ["*"]
     },
     {
-      "matchPackageNames": [
-        "/zod/",
-        "/tailwind-variants/"
-      ],
+      "matchPackageNames": ["/zod/", "/tailwind-variants/"],
       "enabled": false
     }
   ],
