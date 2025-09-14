@@ -1,4 +1,4 @@
-name: Checks and Validation
+name: Linting and Formatting
 on:
   pull_request:
 
@@ -32,5 +32,5 @@ jobs:
           prettier: true
           prettier_extensions: "css,html,js,json,jsx,md,sass,scss,ts,tsx,vue,yaml,yml,svelte"
           svelte: true
-          svelte_args: "--ignore target"
+          svelte_args: "--ignore target --no-tsconfig"
           tsc: true
