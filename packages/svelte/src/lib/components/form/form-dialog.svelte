@@ -13,7 +13,7 @@
   import { type SuperForm } from 'sveltekit-superforms';
   import type { Error, FormSchema, FormRecord, FormType } from './types.js';
   import Form from './base-form.svelte';
-  import { wait_for } from '$lib/util/interval.svelte';
+  import { wait_for } from '@lib/util/interval.svelte';
 
   interface Props {
     title: string;

@@ -1,7 +1,7 @@
 {
   "name": "ichwilldich-lib",
   "version": "0.1.0",
-  "repository": "github:ichwilldich/ichwilldich",
+  "type": "module",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && npm run prepack",
@@ -14,62 +14,23 @@
     "format": "prettier --write .",
     "lint": "prettier --check ."
   },
-  "files": [
-    "dist",
-    "!dist/**/*.test.*",
-    "!dist/**/*.spec.*"
-  ],
   "sideEffects": [
     "**/*.css"
   ],
-  "svelte": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js"
-    },
-    "./backend": {
-      "types": "./dist/backend/index.d.ts",
-      "svelte": "./dist/backend/index.js"
-    },
-    "./components": {
-      "types": "./dist/components/index.d.ts",
-      "svelte": "./dist/components/index.js"
-    },
-    "./components/form": {
-      "types": "./dist/components/form/index.d.ts",
-      "svelte": "./dist/components/form/index.js"
-    },
-    "./components/nav": {
-      "types": "./dist/components/nav/index.d.ts",
-      "svelte": "./dist/components/nav/index.js"
-    },
-    "./components/table": {
-      "types": "./dist/components/table/index.d.ts",
-      "svelte": "./dist/components/table/index.js"
-    },
-    "./components/ui": {
-      "types": "./dist/components/ui/index.d.ts",
-      "svelte": "./dist/components/ui/index.js"
-    },
-    "./components/util": {
-      "types": "./dist/components/util/index.d.ts",
-      "svelte": "./dist/components/util/index.js"
-    },
-    "./hooks": {
-      "types": "./dist/hooks/index.d.ts",
-      "svelte": "./dist/hooks/index.js"
-    },
-    "./util": {
-      "types": "./dist/util/index.d.ts",
-      "svelte": "./dist/util/index.js"
-    },
-    "./utils": {
-      "types": "./dist/utils.d.ts",
-      "svelte": "./dist/utils.js"
-    }
+    "./shadcn/*": "./src/lib/components/ui/*/index.ts",
+    "./shadcn/css": "./src/app.css",
+    "./backend": "./src/lib/backend/index.ts",
+    "./components/form": "./src/lib/components/form/index.ts",
+    "./components/nav": "./src/lib/components/nav/index.ts",
+    "./components/table": "./src/lib/components/table/index.ts",
+    "./components/util": "./src/lib/components/util/index.ts",
+    "./hooks": "./src/lib/hooks/index.ts",
+    "./util": "./src/lib/util/index.ts",
+    "./utils": "./src/lib/utils.ts"
+  },
+  "peerDependencies": {
+    "svelte": "5.38.7"
   },
   "dependencies": {
     "@internationalized/date": "3.9.0",
@@ -88,7 +49,6 @@
     "luxon": "3.7.2",
     "mode-watcher": "^1.0.8",
     "paneforge": "^1.0.0-next.5",
-    "svelte": "5.38.7",
     "svelte-sonner": "^1.0.5",
     "sveltekit-superforms": "2.27.1",
     "tailwind-merge": "3.3.1",

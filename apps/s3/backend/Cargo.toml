@@ -5,3 +5,7 @@ edition = "2024"
 
 [dependencies]
 ichwilldich-lib = { workspace = true }
+
+[[bin]]
+name = "backend"
+path = "src/main.rs"

@@ -12,7 +12,7 @@
   import Table from '../table/base-table.svelte';
   import { toast } from 'svelte-sonner';
   import type { ColumnDef, Row } from '@tanstack/table-core';
-  import { RequestError } from '$lib/backend/types.svelte';
+  import { RequestError } from '@lib/backend/types.svelte';
   import type { Snippet, SvelteComponent } from 'svelte';
   import type { SuperForm } from 'sveltekit-superforms';
   import FormDialog from '../form/form-dialog.svelte';
