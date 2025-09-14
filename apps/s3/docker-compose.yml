@@ -16,15 +16,15 @@ services:
     networks:
       - nginx
     tty: true
-    entrypoint: ["tini", "--"]
-    command: ["cargo", "watch", "-x", "run", "-C", "apps/s3/backend"]
+    entrypoint: ['tini', '--']
+    command: ['cargo', 'watch', '-x', 'run', '-C', 'apps/s3/backend']
 
   nginx:
     image: nginx:latest
     volumes:
       - ../../nginx.conf:/etc/nginx/nginx.conf
     ports:
-      - "5173:5173"
+      - '5173:5173'
     networks:
       - nginx
     environment:
