@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["apps/s3/backend", "packages/rust"]
+members = ["apps/s3/backend", "packages/rust", "packages/rust-derive"]
 
 [workspace.dependencies]
 ichwilldich-lib = { path = "packages/rust" }

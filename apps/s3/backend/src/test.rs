@@ -1,24 +1,20 @@
 use axum::{Extension, Router, routing::get};
+use ichwilldich_lib::FromReqExtension;
 
-use crate::{config::Config, from_req_extension, state_trait};
+use crate::config::Config;
 
-pub fn router() -> Router {
-  Router::new().route("/hello", get(hello))
-}
-
-state_trait!(
-  async fn test(self, config: &Config) -> Self {
-    self.layer(Extension(HelloState {
-      message: format!("Hello on port {}", config.port),
+pub async fn router(config: &Config) -> Router {
+  Router::new()
+    .route("/hello", get(hello))
+    .layer(Extension(HelloState {
+      message: format!("Hello on port {}", config.base.port),
     }))
-  }
-);
-
-#[derive(Debug, Clone)]
-struct HelloState {
-  message: String,
 }
-from_req_extension!(HelloState);
+
+#[derive(Debug, Clone, FromReqExtension)]
+pub struct HelloState {
+  pub message: String,
+}
 
 async fn hello(state: HelloState) -> String {
   state.message

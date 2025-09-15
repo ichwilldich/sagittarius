@@ -1,19 +1,12 @@
-use std::net::SocketAddr;
-
-use axum::{Router, serve};
+use axum::{Extension, Router};
 use clap::Parser;
 #[cfg(debug_assertions)]
 use dotenv::dotenv;
-use tokio::{net::TcpListener, signal};
-use tower::ServiceBuilder;
+use ichwilldich_lib::init::{BaseLayerExt, listener_setup, run_app};
 
-use crate::{config::Config, cors::cors};
+use crate::config::Config;
 
 mod config;
-mod cors;
-mod error;
-mod logging;
-mod macros;
 mod test;
 
 #[tokio::main]
@@ -22,50 +15,16 @@ async fn main() {
   dotenv().ok();
 
   let config = Config::parse();
-
-  tracing_subscriber::fmt()
-    .with_max_level(config.log_level)
-    .init();
+  let listener = listener_setup(&config.base).await;
 
   let app = Router::new()
-    .merge(routes())
-    .state(&config)
-    .await
-    .layer(ServiceBuilder::new().layer(cors(&config).expect("Failed to build CORS layer")));
+    .add_base_layers(&config.base)
+    .merge(router(&config).await)
+    .layer(Extension(config));
 
-  let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-  let listener = TcpListener::bind(addr)
-    .await
-    .expect("Failed to bind to address");
-
-  serve(listener, app)
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .expect("Failed to start server");
+  run_app(listener, app).await;
 }
 
-fn routes() -> Router {
-  Router::new().nest("/test", test::router())
-}
-
-collect_state!(test, logging);
-
-async fn shutdown_signal() {
-  let ctrl_c = async {
-    signal::ctrl_c()
-      .await
-      .expect("failed to install Ctrl+C handler");
-  };
-
-  let terminate = async {
-    signal::unix::signal(signal::unix::SignalKind::terminate())
-      .expect("failed to install signal handler")
-      .recv()
-      .await;
-  };
-
-  tokio::select! {
-      _ = ctrl_c => {},
-      _ = terminate => {},
-  }
+async fn router(config: &Config) -> Router {
+  Router::new().nest("/test", test::router(config).await)
 }

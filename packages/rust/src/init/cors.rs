@@ -2,9 +2,9 @@ use axum::http::HeaderValue;
 use http::Method;
 use tower_http::cors::CorsLayer;
 
-use crate::{config::Config, error::Result};
+use crate::{config::BaseConfig, error::Result};
 
-pub fn cors(config: &Config) -> Result<CorsLayer> {
+pub fn cors(config: &BaseConfig) -> Result<CorsLayer> {
   let cors = CorsLayer::new()
     .allow_methods([Method::GET, Method::POST])
     .allow_credentials(true);

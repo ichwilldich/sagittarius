@@ -539,6 +539,18 @@ dependencies = [
 [[package]]
 name = "ichwilldich-lib"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "http",
+ "rust-derive",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "io-uring"
@@ -739,6 +751,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "rust-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
