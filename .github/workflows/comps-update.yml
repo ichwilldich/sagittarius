@@ -23,6 +23,8 @@ jobs:
           grep -rl '@lib' . | xargs sed -i 's/$lib/@lib/g'
           git restore package.json
           npx -y prettier -cw .
+          cd ../..
+          git restore package-lock.json
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
