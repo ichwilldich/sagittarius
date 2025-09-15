@@ -16,7 +16,6 @@ pub fn init_logging(config: &BaseConfig) {
 }
 
 pub async fn listener_setup(config: &BaseConfig) -> TcpListener {
-  init_logging(config);
   let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
 
   TcpListener::bind(addr)
