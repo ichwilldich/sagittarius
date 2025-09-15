@@ -4,7 +4,7 @@ use axum::{Router, serve};
 use tokio::{net::TcpListener, signal};
 use tower::ServiceBuilder;
 
-use crate::{config::BaseConfig, init::cors::cors};
+use crate::{config::BaseConfig, init::cors::cors, router_extension};
 
 mod cors;
 mod logging;
@@ -51,14 +51,13 @@ async fn shutdown_signal() {
   }
 }
 
-pub trait BaseLayerExt {
-  fn add_base_layers(self, config: &BaseConfig) -> Self;
-}
+router_extension!(
+  async fn add_base_layers(self, config: &BaseConfig) -> Self {
+    use logging::logging;
 
-impl BaseLayerExt for Router {
-  fn add_base_layers(self, config: &BaseConfig) -> Self {
     self
       .layer(ServiceBuilder::new().layer(cors(config).expect("Failed to build CORS layer")))
-      .merge(logging::router())
+      .logging()
+      .await
   }
-}
+);

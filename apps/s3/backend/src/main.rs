@@ -2,7 +2,10 @@ use axum::{Extension, Router};
 use clap::Parser;
 #[cfg(debug_assertions)]
 use dotenv::dotenv;
-use ichwilldich_lib::init::{BaseLayerExt, listener_setup, run_app};
+use ichwilldich_lib::{
+  init::{add_base_layers, listener_setup, run_app},
+  router_extension,
+};
 
 use crate::config::Config;
 
@@ -17,14 +20,24 @@ async fn main() {
   let config = Config::parse();
   let listener = listener_setup(&config.base).await;
 
-  let app = Router::new()
+  let app = router()
     .add_base_layers(&config.base)
-    .merge(router(&config).await)
+    .await
+    .state(&config)
+    .await
     .layer(Extension(config));
 
   run_app(listener, app).await;
 }
 
-async fn router(config: &Config) -> Router {
-  Router::new().nest("/test", test::router(config).await)
+fn router() -> Router {
+  Router::new().nest("/test", test::router())
 }
+
+router_extension!(
+  async fn state(self, config: &Config) -> Self {
+    use test::test;
+
+    self.test(config).await
+  }
+);
