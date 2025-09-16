@@ -3,13 +3,14 @@ use clap::Parser;
 #[cfg(debug_assertions)]
 use dotenv::dotenv;
 use ichwilldich_lib::{
-  init::{add_base_layers, listener_setup, run_app},
+  init::{add_base_layers, init_logging, listener_setup, run_app},
   router_extension,
 };
 
 use crate::config::Config;
 
 mod config;
+mod s3;
 mod test;
 
 #[tokio::main]
@@ -18,6 +19,8 @@ async fn main() {
   dotenv().ok();
 
   let config = Config::parse();
+  init_logging(&config.base);
+
   let listener = listener_setup(&config.base).await;
 
   let app = router()
