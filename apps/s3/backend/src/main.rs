@@ -2,14 +2,13 @@ use axum::{Extension, Router};
 use clap::Parser;
 #[cfg(debug_assertions)]
 use dotenv::dotenv;
-use ichwilldich_lib::{
-  init::{add_base_layers, init_logging, listener_setup, run_app},
-  router_extension,
-};
+use ichwilldich_lib::init::{add_base_layers, init_logging, listener_setup, run_app};
+use tokio::join;
 
-use crate::config::Config;
+use crate::{config::Config, macros::DualRouterExt};
 
 mod config;
+mod macros;
 mod s3;
 
 #[tokio::main]
@@ -20,20 +19,23 @@ async fn main() {
   let config = Config::parse();
   init_logging(&config.base);
 
-  let listener = listener_setup(&config.base).await;
+  let app_listener = listener_setup(config.base.port).await;
+  let s3_listener = listener_setup(config.s3_port).await;
 
-  let app = router()
-    .add_base_layers(&config.base)
-    .await
+  let (app, s3) = (router(&config).await, s3_router(&config).await)
     .state(&config)
     .await
     .layer(Extension(config));
 
-  run_app(listener, app).await;
+  join!(run_app(app_listener, app), run_app(s3_listener, s3));
 }
 
-fn router() -> Router {
-  Router::new().nest("/s3", s3::router())
+async fn router(config: &Config) -> Router {
+  Router::new().add_base_layers(&config.base).await
+}
+
+async fn s3_router(config: &Config) -> Router {
+  s3::router().add_base_layers(&config.base).await
 }
 
 router_extension!(

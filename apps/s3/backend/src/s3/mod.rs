@@ -1,7 +1,5 @@
+use crate::{config::Config, router_extension};
 use axum::Router;
-use ichwilldich_lib::router_extension;
-
-use crate::config::Config;
 
 mod header;
 mod operations;

@@ -190,6 +190,7 @@ dependencies = [
  "ichwilldich-lib",
  "serde",
  "tokio",
+ "tower",
  "tracing",
 ]
 

@@ -15,4 +15,8 @@ pub struct Config {
   pub storage_type: StorageType,
   #[clap(short = 'p', long, env)]
   pub storage_path: PathBuf,
+
+  // s3
+  #[clap(long, env, default_value = "9000")]
+  pub s3_port: u16,
 }

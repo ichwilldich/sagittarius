@@ -5,11 +5,13 @@ use std::{io::Result, path::PathBuf};
 
 use axum::Extension;
 use clap::ValueEnum;
-use ichwilldich_lib::{FromReqExtension, router_extension};
+use ichwilldich_lib::FromReqExtension;
 use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
 use crate::config::Config;
+use crate::macros::DualRouterExt;
+use crate::router_extension;
 
 pub mod no_raid;
 

@@ -12,6 +12,7 @@ tokio = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 http = { workspace = true }
+tower = { workspace = true }
 serde = { workspace = true }
 async-trait = { workspace = true }
 
