@@ -1,9 +1,12 @@
 use std::{
   io::{Error, ErrorKind, Result},
-  path::{Path, PathBuf},
+  path::{self, Path, PathBuf},
 };
 
-use tokio::{fs, io};
+use tokio::{
+  fs,
+  io::{self, AsyncRead},
+};
 
 use crate::s3::storage::Storage;
 
@@ -12,13 +15,12 @@ pub struct NoRaid {
 }
 
 impl NoRaid {
-  pub async fn new(base_path: PathBuf) -> Result<Self> {
-    let base_path = fs::canonicalize(base_path).await?;
-    Ok(Self { base_path })
+  pub fn new(base_path: PathBuf) -> Self {
+    Self { base_path }
   }
 
   async fn full_path(&self, path: &Path) -> Result<PathBuf> {
-    let path = fs::canonicalize(self.base_path.join(path)).await?;
+    let path = path::absolute(self.base_path.join(path))?;
 
     if !path.starts_with(&self.base_path) {
       return Err(Error::new(
@@ -31,6 +33,7 @@ impl NoRaid {
   }
 }
 
+#[async_trait::async_trait]
 impl Storage for NoRaid {
   async fn create_dir(&self, path: &Path) -> Result<()> {
     let full_path = self.full_path(path).await?;
@@ -54,21 +57,18 @@ impl Storage for NoRaid {
     Ok(names)
   }
 
-  async fn stream_write_file<R: tokio::io::AsyncRead + Unpin + Send>(
+  async fn stream_write_file(
     &self,
     path: &Path,
-    mut reader: R,
+    reader: &mut (dyn AsyncRead + Unpin + Send),
   ) -> Result<()> {
     let full_path = self.full_path(path).await?;
     let mut file = fs::File::create(full_path).await?;
-    io::copy(&mut reader, &mut file).await?;
+    io::copy(reader, &mut file).await?;
     Ok(())
   }
 
-  async fn stream_read_file(
-    &self,
-    path: &Path,
-  ) -> Result<Box<dyn tokio::io::AsyncRead + Unpin + Send>> {
+  async fn stream_read_file(&self, path: &Path) -> Result<Box<dyn AsyncRead + Unpin + Send>> {
     let full_path = self.full_path(path).await?;
     let file = fs::File::open(full_path).await?;
     Ok(Box::new(file))

@@ -11,7 +11,6 @@ use crate::config::Config;
 
 mod config;
 mod s3;
-mod test;
 
 #[tokio::main]
 async fn main() {
@@ -34,13 +33,13 @@ async fn main() {
 }
 
 fn router() -> Router {
-  Router::new().nest("/test", test::router())
+  Router::new().nest("/s3", s3::router())
 }
 
 router_extension!(
   async fn state(self, config: &Config) -> Self {
-    use test::test;
+    use s3::s3;
 
-    self.test(config).await
+    self.s3(config).await
   }
 );

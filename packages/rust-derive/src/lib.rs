@@ -23,7 +23,7 @@ pub fn from_req(input: TokenStream) -> TokenStream {
       async fn from_request_parts(
         parts: &mut ichwilldich_lib::http::request::Parts,
         _state: &FromRequestGeneric,
-      ) -> Result<Self, Self::Rejection> {
+      ) -> std::result::Result<Self, Self::Rejection> {
         use ichwilldich_lib::axum::RequestPartsExt;
 
         Ok(

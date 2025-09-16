@@ -13,6 +13,7 @@ axum = { workspace = true }
 axum-extra = { workspace = true }
 http = { workspace = true }
 serde = { workspace = true }
+async-trait = { workspace = true }
 
 [[bin]]
 name = "backend"
