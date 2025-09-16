@@ -1,6 +1,10 @@
 use axum::{Router, extract::Path, routing::put};
 use http::HeaderMap;
-use ichwilldich_lib::{error::{Error, Result}, path, req::xml::Xml};
+use ichwilldich_lib::{
+  error::{Error, Result},
+  path,
+  req::xml::Xml,
+};
 use serde::Deserialize;
 
 use crate::s3::{operations::BUCKET_DIR, storage::StorageState};
@@ -15,7 +19,11 @@ async fn create_bucket(
   Path(bucket): Path<String>,
   Xml(_req): Xml<CreateBucketConfiguration>,
 ) -> Result<HeaderMap> {
-  if storage.list_dir(&path!(BUCKET_DIR)).await?.contains(&bucket) {
+  if storage
+    .list_dir(&path!(BUCKET_DIR))
+    .await?
+    .contains(&bucket)
+  {
     return Err(Error::Conflict);
   }
 
