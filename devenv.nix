@@ -5,6 +5,7 @@
     pkg-config
     openssl
     cargo-watch
+    git
   ];
 
   languages = {
