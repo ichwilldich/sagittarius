@@ -10,12 +10,11 @@ WORKDIR /app/${APP_PATH}
 COPY ${APP_PATH}/package.json ./
 COPY package-lock.json package.json ../../../
 
-RUN npm ci
+RUN npm ci -f
 
 COPY ${APP_PATH}/svelte.config.js ${APP_PATH}/tsconfig.json ${APP_PATH}/vite.config.ts ./
 COPY ${APP_PATH}/src ./src
 COPY ${APP_PATH}/static ./static
-
 
 RUN npm run build
 
