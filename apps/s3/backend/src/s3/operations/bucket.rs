@@ -3,7 +3,6 @@ use http::HeaderMap;
 use ichwilldich_lib::{
   error::{Error, Result},
   path,
-  req::xml::Xml,
 };
 use serde::Deserialize;
 
