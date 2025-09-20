@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from 'ichwilldich-lib/shadcn/button';
+  import { Button } from "positron-components";
 </script>
 
 <Button>Test</Button>
