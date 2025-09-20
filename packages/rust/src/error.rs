@@ -1,4 +1,9 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+  extract::rejection::BytesRejection,
+  response::{IntoResponse, Response},
+};
+use axum_extra::typed_header::TypedHeaderRejection;
+use hmac::digest::InvalidLength;
 use http::StatusCode;
 use thiserror::Error;
 
@@ -21,6 +26,12 @@ pub enum Error {
   IO(#[from] std::io::Error),
   #[error(transparent)]
   InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
+  #[error(transparent)]
+  TypedHeader(#[from] TypedHeaderRejection),
+  #[error(transparent)]
+  Bytes(#[from] BytesRejection),
+  #[error(transparent)]
+  InvalidLength(#[from] InvalidLength),
 }
 
 impl IntoResponse for Error {

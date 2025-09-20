@@ -1,6 +1,7 @@
 use crate::{config::Config, router_extension};
 use axum::Router;
 
+mod auth;
 mod header;
 mod operations;
 pub mod storage;

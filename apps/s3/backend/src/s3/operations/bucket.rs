@@ -7,7 +7,7 @@ use ichwilldich_lib::{
 };
 use serde::Deserialize;
 
-use crate::s3::{operations::BUCKET_DIR, storage::StorageState};
+use crate::s3::{auth::S3Auth, operations::BUCKET_DIR, storage::StorageState};
 
 pub fn router() -> Router {
   Router::new().route("/{bucket}", put(create_bucket))
@@ -15,10 +15,13 @@ pub fn router() -> Router {
 
 /// TODO: Handling of additional header options
 async fn create_bucket(
+  h: HeaderMap,
   storage: StorageState,
   Path(bucket): Path<String>,
-  Xml(_req): Xml<CreateBucketConfiguration>,
+  auth: S3Auth,
+  //Xml(_req): Xml<CreateBucketConfiguration>,
 ) -> Result<HeaderMap> {
+  dbg!(&h);
   if storage
     .list_dir(&path!(BUCKET_DIR))
     .await?
