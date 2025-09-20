@@ -1,12 +1,64 @@
 <script lang="ts">
-  import favicon from '$lib/assets/favicon.svg';
+  import {
+    ModeWatcher,
+    Toaster
+  } from 'positron-components/components/ui';
   import '../app.css';
+  import AppSidebar from "$lib/components/navbar/sidebar-app/sidebar-app.svelte";
+  import { Breadcrumb } from "positron-components/components/ui";
+  import { Separator } from "positron-components/components/ui";
+  import { Sidebar } from "positron-components/components/ui";
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
+  import { onMount } from 'svelte';
 
-  let { children } = $props();
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
+
+  const noLayout = ['/login', '/oauth', '/oauth/logout'];
 </script>
 
 <svelte:head>
-  <link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children?.()}
+
+{#if !noLayout.includes(page.url.pathname)}
+  <Sidebar.Provider>
+  <AppSidebar />
+  <Sidebar.Inset>
+    <header
+      class="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear"
+    >
+      <div class="flex items-center gap-2 px-4">
+        <Sidebar.Trigger class="-ml-1" />
+        <Separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4" />
+        <Breadcrumb.Root>
+          <Breadcrumb.List>
+            <Breadcrumb.Item class="hidden md:block">
+              <Breadcrumb.Link href="#">Building Your Application</Breadcrumb.Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Separator class="hidden md:block" />
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
+            </Breadcrumb.Item>
+          </Breadcrumb.List>
+        </Breadcrumb.Root>
+      </div>
+    </header>
+    <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div class="grid auto-rows-min gap-4 md:grid-cols-3">
+        <div class="bg-muted/50 aspect-video rounded-xl"></div>
+        <div class="bg-muted/50 aspect-video rounded-xl"></div>
+        <div class="bg-muted/50 aspect-video rounded-xl"></div>
+      </div>
+      <div class="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min"></div>
+    </div>
+  </Sidebar.Inset>
+</Sidebar.Provider>
+{:else}
+  {@render children?.()}
+{/if}

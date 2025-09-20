@@ -46,7 +46,7 @@
               variant="outline"
               type="button"
               class="w-full flex items-center justify-center gap-2 cursor-pointer transition-colors duration-150 ease-in-out hover:bg-accent hover:text-accent-foreground hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
-              on:click={() => {/* TODO: Passkey flow */}}
+              onclick={() => {/* TODO: Passkey flow */}}
               aria-label="Sign in with Passkey"
               title="Sign in with Passkey"
             >
@@ -57,7 +57,7 @@
               variant="outline"
               type="button"
               class="w-full flex items-center justify-center gap-2 cursor-pointer transition-colors duration-150 ease-in-out hover:bg-accent hover:text-accent-foreground hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
-              on:click={() => {/* TODO: Azure SSO */}}
+              onclick={() => {/* TODO: Azure SSO */}}
               aria-label="Sign in with Azure SSO"
               title="Sign in with Azure SSO"
             >
@@ -65,10 +65,6 @@
               <span class="text-sm">Azure</span>
             </Button>
             </div>
-          <div class="text-center text-sm">
-            Don&apos;t have an account?
-            <a href="/signup" class="underline underline-offset-4"> Sign up </a>
-          </div>
         </div>
       </form>
       <div class="bg-muted relative hidden md:flex items-center justify-center p-8">
@@ -79,10 +75,4 @@
       </div>
     </Card.Content>
   </Card.Root>
-  <div
-    class="text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs"
-  >
-    By clicking continue, you agree to our <a href="##">Terms of Service</a> and
-    <a href="##">Privacy Policy</a>.
-  </div>
 </div>
