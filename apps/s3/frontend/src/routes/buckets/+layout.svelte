@@ -1,7 +1,11 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { Search, Folder } from '@lucide/svelte';
+    import { Search, Folder, Plus } from '@lucide/svelte';
+    import { Card, Button, Input } from 'positron-components/components/ui';
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
 
+    let { children }: Props = $props();
     // Beispiel-Daten für Buckets
     let buckets = [
         {
@@ -56,12 +60,15 @@
         }
     ];
 
-    let searchTerm = '';
-    let filteredBuckets = buckets;
-    let selectedBucket = null;
+    let searchTerm = $state('');
+    let filteredBuckets = $state(buckets);
+    
+    // Aktive Bucket-ID aus der URL
+    let selectedBucketId = $derived($page.params.id);
+    let selectedBucket = $derived(buckets.find(b => b.id === selectedBucketId));
 
-    // Suchfunktion
-    $: {
+    // Suchfunktion als Effect
+    $effect(() => {
         if (searchTerm.trim() === '') {
             filteredBuckets = buckets;
         } else {
@@ -69,133 +76,114 @@
                 bucket.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-    }
+    });
 
     // Handler für Bucket-Klick
     function handleBucketClick(bucket: any) {
-        selectedBucket = bucket;
-        console.log('Bucket selected:', bucket);
+        goto(`/buckets/${bucket.id}`);
+    }
+
+    // Handler für neues Bucket
+    function handleNewBucket() {
+        console.log('Create new bucket');
+        // Hier würdest du zu einer Create-Seite navigieren
+        // goto('/buckets/new');
     }
 
     onMount(() => {
-        console.log('Buckets page loaded');
+        console.log('Buckets layout loaded');
     });
 </script>
 
-<div class="h-full flex">
-    <!-- Sidebar -->
-    <div class="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
-        <!-- Sidebar Header -->
-        <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">S3 Buckets</h2>
-        </div>
+<div class="h-screen flex flex-col">
+    <div class="flex-1 p-6 flex gap-6 min-h-0">
+        <!-- Sidebar Card -->
+        <Card.Root class="w-80 flex flex-col">
+            <Card.Header class="pb-4">
+                <Card.Title class="text-lg font-semibold flex items-center gap-2">
+                    <Folder class="h-5 w-5 text-primary" />
+                    S3 Buckets
+                </Card.Title>
+            </Card.Header>
 
-        <!-- Suchleiste -->
-        <div class="p-4">
-            <div class="relative">
-                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                    type="text"
-                    placeholder="Buckets durchsuchen..."
-                    bind:value={searchTerm}
-                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-            </div>
-        </div>
-
-        <!-- Bucket-Liste -->
-        <div class="flex-1 overflow-y-auto">
-            {#if filteredBuckets.length === 0}
-                <div class="p-4 text-center text-gray-500">
-                    <p>Keine Buckets gefunden</p>
+            <Card.Content class="flex-1 flex flex-col space-y-4 px-6 pb-6 min-h-0">
+                <!-- Suchleiste -->
+                <div class="relative">
+                    <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                        type="text"
+                        placeholder="Buckets durchsuchen..."
+                        bind:value={searchTerm}
+                        class="pl-10"
+                    />
                 </div>
-            {:else}
-                <div class="p-2">
-                    {#each filteredBuckets as bucket (bucket.id)}
-                        <div 
-                            class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-150 {selectedBucket?.id === bucket.id ? 'bg-blue-50 border border-blue-200' : ''}"
-                            on:click={() => handleBucketClick(bucket)}
-                            on:keydown={(e) => e.key === 'Enter' && handleBucketClick(bucket)}
-                            role="button"
-                            tabindex="0"
-                        >
-                            <Folder class="h-5 w-5 text-gray-600 flex-shrink-0" />
-                            <span class="text-sm font-medium text-gray-900 truncate">
-                                {bucket.name}
-                            </span>
+
+                <!-- Neuer Bucket Button -->
+                <Button onclick={handleNewBucket} class="w-full">
+                    <Plus class="h-4 w-4 mr-2" />
+                    Neues Bucket
+                </Button>
+
+                <!-- Bucket-Liste -->
+                <div class="flex-1 overflow-y-auto -mx-2 min-h-0">
+                    {#if filteredBuckets.length === 0}
+                        <div class="p-4 text-center">
+                            <Folder class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                            <p class="text-sm text-muted-foreground">Keine Buckets gefunden</p>
                         </div>
-                    {/each}
-                </div>
-            {/if}
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        {#if selectedBucket}
-            <!-- Bucket Details -->
-            <div class="p-6">
-                <div class="mb-6">
-                    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Folder class="h-6 w-6 text-blue-600" />
-                        {selectedBucket.name}
-                    </h1>
-                    <p class="text-gray-600 mt-1">{selectedBucket.description}</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-2xl font-bold text-gray-900">{selectedBucket.size}</div>
-                        <div class="text-sm text-gray-600">Größe</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-2xl font-bold text-gray-900">{selectedBucket.objectCount}</div>
-                        <div class="text-sm text-gray-600">Objekte</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-2xl font-bold text-gray-900">{selectedBucket.region}</div>
-                        <div class="text-sm text-gray-600">Region</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-2xl font-bold text-gray-900">
-                            <span class="px-2 py-1 text-xs rounded-full {selectedBucket.public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                                {selectedBucket.public ? 'Öffentlich' : 'Privat'}
-                            </span>
+                    {:else}
+                        <div class="space-y-1 px-2">
+                            {#each filteredBuckets as bucket (bucket.id)}
+                                <Button
+                                    variant={selectedBucketId === bucket.id ? 'default' : 'ghost'}
+                                    class="w-full justify-start p-3 h-auto"
+                                    onclick={() => handleBucketClick(bucket)}
+                                >
+                                    <div class="flex items-center gap-3 w-full">
+                                        <Folder class="h-4 w-4 flex-shrink-0" />
+                                        <div class="flex flex-col items-start flex-1 min-w-0">
+                                            <span class="text-sm font-medium truncate w-full text-left">
+                                                {bucket.name}
+                                            </span>
+                                            <span class="text-xs text-muted-foreground truncate w-full text-left">
+                                                {bucket.objectCount} Objekte
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Button>
+                            {/each}
                         </div>
-                        <div class="text-sm text-gray-600">Sichtbarkeit</div>
-                    </div>
+                    {/if}
                 </div>
-            </div>
-        {:else}
-            <!-- Placeholder wenn kein Bucket ausgewählt -->
-            <div class="flex-1 flex items-center justify-center">
-                <div class="text-center">
-                    <Folder class="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Wählen Sie ein Bucket aus</h3>
-                    <p class="text-gray-600">Klicken Sie auf ein Bucket in der Seitenleiste, um Details anzuzeigen</p>
-                </div>
-            </div>
-        {/if}
+            </Card.Content>
+        </Card.Root>
+
+        <!-- Main Content Card -->
+        <Card.Root class="flex-1 min-h-0">
+            <Card.Content class="h-full p-0">
+                {@render children({ selectedBucket })}
+            </Card.Content>
+        </Card.Root>
     </div>
 </div>
 
 <style>
-    /* Custom scrollbar styling für Sidebar */
+    /* Custom scrollbar styling */
     :global(.overflow-y-auto::-webkit-scrollbar) {
         width: 6px;
     }
 
     :global(.overflow-y-auto::-webkit-scrollbar-track) {
-        background: #f1f5f9;
+        background: hsl(var(--muted));
         border-radius: 3px;
     }
 
     :global(.overflow-y-auto::-webkit-scrollbar-thumb) {
-        background: #cbd5e1;
+        background: hsl(var(--muted-foreground) / 0.3);
         border-radius: 3px;
     }
 
     :global(.overflow-y-auto::-webkit-scrollbar-thumb:hover) {
-        background: #94a3b8;
+        background: hsl(var(--muted-foreground) / 0.5);
     }
 </style>
