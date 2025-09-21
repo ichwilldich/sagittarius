@@ -27,8 +27,12 @@
 
 
 {#if !noLayout.includes(page.url.pathname)}
-  <Sidebar.Provider>
+  <Sidebar.Provider class="min-h-screen">
     <AppSidebar />
+    <Sidebar.Trigger class="absolute top-3 left-3 flex md:hidden" />
+    <main class="flex min-h-screen w-full">
+      {@render children?.()}
+    </main>
   </Sidebar.Provider>
 {:else}
   {@render children?.()}

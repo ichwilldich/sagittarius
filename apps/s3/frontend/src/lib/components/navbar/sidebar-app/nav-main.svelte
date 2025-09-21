@@ -22,7 +22,7 @@
         {#each items as item (item.title)}
             <Sidebar.MenuItem>
                 <a href={item.url}>
-                    <Sidebar.MenuButton tooltipContent={item.title} active={item.isActive}>
+                    <Sidebar.MenuButton tooltipContent={item.title}>
                         {#if item.icon}
                             <item.icon />
                         {/if}
