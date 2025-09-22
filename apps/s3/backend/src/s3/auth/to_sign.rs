@@ -100,7 +100,7 @@ pub fn string_to_sign(
 
   // RequestDateTime
   string_to_sign.push_str(&amz_date.format("%Y%m%dT%H%M%SZ").to_string());
-  string_to_sign.push_str("\n");
+  string_to_sign.push('\n');
 
   // CredentialScope
   string_to_sign.push_str(&format!(

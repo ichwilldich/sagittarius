@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{ItemEnum, ItemStruct, parse_macro_input};
+use syn::{ItemStruct, parse_macro_input};
 
 #[proc_macro_derive(FromReqExtension)]
 pub fn from_req(input: TokenStream) -> TokenStream {
