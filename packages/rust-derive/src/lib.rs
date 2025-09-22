@@ -44,31 +44,3 @@ pub fn from_req(input: TokenStream) -> TokenStream {
   }
   .into()
 }
-
-#[proc_macro_derive(UnitEnumStr)]
-pub fn unit_enum_str(input: TokenStream) -> TokenStream {
-  let input = parse_macro_input!(input as ItemEnum);
-  let name = input.ident;
-
-  quote! {
-    impl std::fmt::Display for #name {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = ichwilldich_lib::json::to_value(self).expect("Only enums with unit variants are supported");
-        let ichwilldich_lib::json::Value::String(s) = value else {
-          unreachable!("Only enums with unit variants are supported")
-        };
-
-        write!(f, "{s}")
-      }
-    }
-
-    impl std::str::FromStr for #name {
-      type Err = ichwilldich_lib::json::Error;
-
-      fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let value = ichwilldich_lib::json::Value::String(s.to_string());
-        ichwilldich_lib::json::from_value(value)
-      }
-    }
-  }.into()
-}

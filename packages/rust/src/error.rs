@@ -22,6 +22,8 @@ pub enum Error {
   Conflict,
   #[error("Gone")]
   Gone,
+  #[error("Forbidden")]
+  Forbidden,
   #[error(transparent)]
   IO(#[from] std::io::Error),
   #[error(transparent)]
@@ -42,6 +44,7 @@ impl IntoResponse for Error {
       Self::Conflict => StatusCode::CONFLICT.into_response(),
       Self::Gone => StatusCode::GONE.into_response(),
       Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+      Self::Forbidden => StatusCode::FORBIDDEN.into_response(),
       _ => StatusCode::BAD_REQUEST.into_response(),
     }
   }

@@ -1,5 +1,5 @@
-use ichwilldich_lib::UnitEnumStr;
-use serde::{Deserialize, Serialize};
+use chrono::NaiveDateTime;
+use serde_enum_str::{Deserialize_enum_str, Serialize_enum_str};
 
 macro_rules! typed_header {
   ($name:ident, $const:ident, $name_str:literal, $inner:ident) => {
@@ -17,6 +17,22 @@ macro_rules! typed_header {
     );
   };
 }
+
+ichwilldich_lib::typed_header!(
+  AwzDate,
+  AWZ_DATE,
+  "x-amz-date",
+  NaiveDateTime,
+  |s| NaiveDateTime::parse_from_str(s, "%Y%m%dT%H%M%SZ").ok(),
+  |v| v.format("%Y%m%dT%H%M%SZ").to_string()
+);
+
+typed_header!(
+  AwzContentSha256,
+  AWZ_CONTENT_SHA256,
+  "x-amz-content-sha256",
+  AwzContentSha256Enum
+);
 
 typed_header!(AwzAcl, AWZ_ACL, "x-amz-acl", AwzAclEnum);
 typed_header!(
@@ -45,18 +61,27 @@ typed_header!(
   AwzObjectOwnershipEnum
 );
 
-#[derive(Deserialize, Serialize, UnitEnumStr)]
+#[derive(Deserialize_enum_str, Serialize_enum_str)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE")]
+pub enum AwzContentSha256Enum {
+  MultipleChunks,
+  UnsignedPayload,
+  #[serde(other)]
+  SingleChunk(String),
+}
+
+#[derive(Deserialize_enum_str, Serialize_enum_str)]
 #[serde(rename_all = "kebab-case")]
-enum AwzAclEnum {
+pub enum AwzAclEnum {
   Private,
   PublicRead,
   PublicReadWrite,
   AuthenticatedRead,
 }
 
-#[derive(Deserialize, Serialize, UnitEnumStr)]
+#[derive(Deserialize_enum_str, Serialize_enum_str)]
 #[serde(rename_all = "kebab-case")]
-enum AwzObjectOwnershipEnum {
+pub enum AwzObjectOwnershipEnum {
   BucketOwnerEnforced,
   BucketOwnerPreferred,
   ObjectWriter,

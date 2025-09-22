@@ -6,12 +6,16 @@ macro_rules! typed_header {
       ichwilldich_lib::http::HeaderName::from_static($name_str);
 
     impl $name {
-      pub fn inner(&self) -> &$inner {
-        &self.0
-      }
-
       pub fn into_inner(self) -> $inner {
         self.0
+      }
+    }
+
+    impl std::ops::Deref for $name {
+      type Target = $inner;
+
+      fn deref(&self) -> &Self::Target {
+        &self.0
       }
     }
 

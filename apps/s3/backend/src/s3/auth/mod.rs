@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use axum::{
   RequestPartsExt,
   body::Bytes,
@@ -5,14 +7,27 @@ use axum::{
 };
 use axum_extra::{
   TypedHeader,
-  headers::{Authorization, authorization::Credentials},
+  headers::{Authorization, Date, authorization::Credentials},
 };
+use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use http::HeaderValue;
 use ichwilldich_lib::error::{Error, Result};
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 
-pub struct S3Auth;
+use crate::s3::{
+  auth::to_sign::{canonical_request, string_to_sign},
+  header::AwzDate,
+};
+
+mod to_sign;
+
+/// TODO: check date and region from request, query sort, load the correct secret, body handling
+/// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
+pub struct S3Auth {
+  region: String,
+  access_key: String,
+}
 
 const SECRET: &str = "secret";
 
@@ -21,8 +36,18 @@ impl<S: Sync + Send> FromRequest<S> for S3Auth {
 
   async fn from_request(req: Request, state: &S) -> std::result::Result<Self, Self::Rejection> {
     let (mut req, body) = req.into_parts();
-    let TypedHeader(Authorization(auth)) =
+    let TypedHeader(Authorization(mut auth)) =
       req.extract::<TypedHeader<Authorization<AWS4>>>().await?;
+
+    let date = {
+      if let Ok(TypedHeader(date)) = req.extract::<TypedHeader<AwzDate>>().await {
+        DateTime::<Utc>::from_naive_utc_and_offset(date.into_inner(), Utc)
+      } else if let Ok(TypedHeader(date)) = req.extract::<TypedHeader<Date>>().await {
+        DateTime::<Utc>::from(SystemTime::from(date))
+      } else {
+        Utc::now()
+      }
+    };
 
     for header in req.headers.keys() {
       if header.as_str().starts_with("x-amz-")
@@ -35,50 +60,10 @@ impl<S: Sync + Send> FromRequest<S> for S3Auth {
       }
     }
 
-    let mut headers = Vec::new();
-    for header in &auth.signed_headers {
-      if let Some(value) = req.headers.get(header) {
-        headers.push((
-          header.to_ascii_lowercase(),
-          value.to_str().map_err(|_| Error::BadRequest)?.trim(),
-        ));
-      } else {
-        return Err(Error::BadRequest);
-      }
-    }
-    headers.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
-
-    let mut canonical_request = String::new();
-    canonical_request.push_str(req.method.as_str());
-    canonical_request.push('\n');
-    canonical_request.push_str(req.uri.path());
-    canonical_request.push('\n');
-    if let Some(query) = req.uri.query() {
-      canonical_request.push_str(query);
-    }
-    canonical_request.push('\n');
-    for (header, value) in &headers {
-      canonical_request.push_str(&format!("{header}:{value}\n"));
-    }
-    canonical_request.push('\n');
-    canonical_request.push_str(&auth.signed_headers.join(";"));
-    canonical_request.push('\n');
-
-    let body = Bytes::from_request(Request::from_parts(req, body), state).await?;
-    let hash = Sha256::digest(&body);
-    canonical_request.push_str(&format!("{:x}", hash));
-
-    let mut to_sign = String::new();
-    to_sign.push_str("AWS4-HMAC-SHA256\n");
-    to_sign.push_str(&format!(
-      "{}\n",
-      chrono::Utc::now().format("%Y%m%dT%H%M%SZ")
-    ));
-    to_sign.push_str(&format!(
-      "{}/{}/s3/aws4_request\n",
-      auth.credential.date, auth.credential.region
-    ));
-    to_sign.push_str(&hex::encode(Sha256::digest(canonical_request.as_bytes())));
+    let body = Bytes::from_request(Request::from_parts(req.clone(), body), state).await?;
+    let canonical_request =
+      canonical_request(&req, &mut auth, &to_sign::Payload::SingleChunk(&body));
+    let to_sign = string_to_sign(&canonical_request, &date, &auth.credential);
 
     let date_key = str_hmac(format!("AWS4{}", SECRET).as_bytes(), &auth.credential.date)?;
     let date_region_key = str_hmac(&date_key, &auth.credential.region)?;
@@ -87,9 +72,14 @@ impl<S: Sync + Send> FromRequest<S> for S3Auth {
     let signature = str_hmac(&signing_key, &to_sign)?;
 
     let signature = hex::encode(signature);
-    println!("signature: {}", signature);
+    if signature != auth.signature {
+      return Err(Error::Forbidden);
+    }
 
-    Ok(S3Auth)
+    Ok(S3Auth {
+      region: auth.credential.region,
+      access_key: auth.credential.access_key,
+    })
   }
 }
 
