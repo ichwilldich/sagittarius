@@ -6,6 +6,7 @@ use crate::s3::{
   auth::{
     S3Auth, SECRET,
     credential::AWS4,
+    header::check_headers,
     sig_v4::{ALGORITHM, CanonicalRequest, Payload},
   },
   header::DATE_FORMAT,
@@ -15,6 +16,7 @@ pub async fn query_auth(req: Request, query: &[(String, String)]) -> Result<S3Au
   let mut data = parse_query(query)?;
   let (parts, _body) = req.into_parts();
 
+  check_headers(&parts, &data.auth)?;
   let date = DateTime::<Utc>::from_naive_utc_and_offset(data.date, Utc);
   let signature = CanonicalRequest::new(&parts, &mut data.auth, &Payload::Unsigned)
     .string_to_sign(&date, &data.auth.credential)
