@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use serde_enum_str::{Deserialize_enum_str, Serialize_enum_str};
 
+pub const DATE_FORMAT: &str = "%Y%m%dT%H%M%SZ";
+
 macro_rules! typed_header {
   ($name:ident, $const:ident, $name_str:literal, $inner:ident) => {
     ichwilldich_lib::typed_header!($name, $const, $name_str, $inner, |s| s.parse().ok(), |v| v
@@ -23,8 +25,8 @@ ichwilldich_lib::typed_header!(
   AWZ_DATE,
   "x-amz-date",
   NaiveDateTime,
-  |s| NaiveDateTime::parse_from_str(s, "%Y%m%dT%H%M%SZ").ok(),
-  |v| v.format("%Y%m%dT%H%M%SZ").to_string()
+  |s| NaiveDateTime::parse_from_str(s, DATE_FORMAT).ok(),
+  |v| v.format(DATE_FORMAT).to_string()
 );
 
 typed_header!(
@@ -64,8 +66,10 @@ typed_header!(
 #[derive(Deserialize_enum_str, Serialize_enum_str)]
 #[serde(rename_all = "SCREAMING-KEBAB-CASE")]
 pub enum AwzContentSha256Enum {
-  MultipleChunks,
   UnsignedPayload,
+  StreamingUnsignedPayloadTrailer,
+  StreamingAws4HmacSha256Payload,
+  StreamingAAws4HmacSha256PayloadTrailer,
   #[serde(other)]
   SingleChunk(String),
 }

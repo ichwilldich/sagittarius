@@ -6,7 +6,12 @@ members = ["apps/s3/backend", "packages/rust", "packages/rust-derive"]
 ichwilldich-lib = { path = "packages/rust" }
 
 uuid = "1.18.1"
-axum = { version = "0.8.4", features = ["macros", "ws", "tracing"] }
+axum = { version = "0.8.4", features = [
+  "macros",
+  "ws",
+  "tracing",
+  "multipart",
+] }
 axum-extra = { version = "0.10.1", features = ["cookie", "typed-header"] }
 tracing-subscriber = "0.3.20"
 clap = { version = "4.5.47", features = ["derive", "env"] }
@@ -22,3 +27,5 @@ serde_json = "1.0.143"
 serde-xml-rs = "0.8.1"
 async-trait = "0.1.89"
 hmac = { version = "0.12.1", features = ["std"] }
+base64 = "0.22.1"
+chrono = { version = "0.4.42", features = ["serde"] }

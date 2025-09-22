@@ -1,5 +1,10 @@
+use std::num::ParseIntError;
+
 use axum::{
-  extract::rejection::BytesRejection,
+  extract::{
+    multipart::{MultipartError, MultipartRejection},
+    rejection::BytesRejection,
+  },
   response::{IntoResponse, Response},
 };
 use axum_extra::typed_header::TypedHeaderRejection;
@@ -24,6 +29,8 @@ pub enum Error {
   Gone,
   #[error("Forbidden")]
   Forbidden,
+  #[error("NotImplemented")]
+  NotImplemented,
   #[error(transparent)]
   IO(#[from] std::io::Error),
   #[error(transparent)]
@@ -34,6 +41,14 @@ pub enum Error {
   Bytes(#[from] BytesRejection),
   #[error(transparent)]
   InvalidLength(#[from] InvalidLength),
+  #[error(transparent)]
+  MultipartRejection(#[from] MultipartRejection),
+  #[error(transparent)]
+  MultipartError(#[from] MultipartError),
+  #[error(transparent)]
+  Chrono(#[from] chrono::ParseError),
+  #[error(transparent)]
+  ParseInt(#[from] ParseIntError),
 }
 
 impl IntoResponse for Error {
@@ -45,6 +60,7 @@ impl IntoResponse for Error {
       Self::Gone => StatusCode::GONE.into_response(),
       Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
       Self::Forbidden => StatusCode::FORBIDDEN.into_response(),
+      Self::NotImplemented => StatusCode::NOT_IMPLEMENTED.into_response(),
       _ => StatusCode::BAD_REQUEST.into_response(),
     }
   }
