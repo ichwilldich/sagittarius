@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use axum_extra::headers::authorization::Credentials;
 use http::HeaderValue;
-use ichwilldich_lib::error::Error;
+use ichwilldich_lib::{bail, error::ErrorReport};
 
 pub struct AWS4 {
   pub credential: AWS4Credential,
@@ -10,6 +10,7 @@ pub struct AWS4 {
   pub signature: String,
 }
 
+#[derive(Debug)]
 pub struct AWS4Credential {
   pub access_key: String,
   pub date: String,
@@ -81,16 +82,12 @@ impl Credentials for AWS4 {
 }
 
 impl FromStr for AWS4Credential {
-  type Err = Error;
+  type Err = ErrorReport;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let parts = s.split('/').collect::<Vec<_>>();
-    if parts.len() != 5 {
-      return Err(Error::BadRequest);
-    }
-
-    if parts[3] != "s3" || parts[4] != "aws4_request" {
-      return Err(Error::BadRequest);
+    if parts.len() != 5 || parts[3] != "s3" || parts[4] != "aws4_request" {
+      bail!("Invalid AWS4 credential format {s}");
     }
 
     Ok(AWS4Credential {

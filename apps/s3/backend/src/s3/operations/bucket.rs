@@ -1,15 +1,12 @@
 use axum::{Router, extract::Path, routing::put};
 use http::HeaderMap;
-use ichwilldich_lib::{
-  error::{Error, Result},
-  path,
-};
+use ichwilldich_lib::{bail, error::Result, path};
 use serde::Deserialize;
 
 use crate::s3::{auth::S3Auth, operations::BUCKET_DIR, storage::StorageState};
 
 pub fn router() -> Router {
-  Router::new().route("/{bucket}", put(create_bucket))
+  Router::new().route("/{*bucket}", put(create_bucket))
 }
 
 /// TODO: Handling of additional header options
@@ -26,7 +23,7 @@ async fn create_bucket(
     .await?
     .contains(&bucket)
   {
-    return Err(Error::Conflict);
+    bail!(CONFLICT, "Bucket {bucket} already exists");
   }
 
   storage.create_dir(&path!(BUCKET_DIR, &bucket)).await?;

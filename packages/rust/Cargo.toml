@@ -20,6 +20,9 @@ serde_json = { workspace = true }
 serde-xml-rs = { workspace = true }
 hmac = { workspace = true }
 chrono = { workspace = true }
+eyre = { workspace = true }
+color-eyre = { workspace = true }
+tracing-error = "0.2.1"
 
 [lib]
 path = "src/lib.rs"

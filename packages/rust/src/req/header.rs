@@ -1,15 +1,9 @@
 #[macro_export]
 macro_rules! typed_header {
   ($name:ident, $const:ident, $name_str:literal, $inner:ident, |$s:ident| $decode:expr, |$v:ident| $encode:expr) => {
-    pub struct $name($inner);
+    pub struct $name(pub $inner);
     pub static $const: ichwilldich_lib::http::HeaderName =
       ichwilldich_lib::http::HeaderName::from_static($name_str);
-
-    impl $name {
-      pub fn into_inner(self) -> $inner {
-        self.0
-      }
-    }
 
     impl std::ops::Deref for $name {
       type Target = $inner;

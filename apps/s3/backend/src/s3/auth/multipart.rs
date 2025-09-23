@@ -1,7 +1,8 @@
 use axum::extract::{FromRequest, Multipart, Request};
 use base64::prelude::*;
 use chrono::NaiveDateTime;
-use ichwilldich_lib::error::{Error, Result};
+use eyre::{Context, OptionExt};
+use ichwilldich_lib::{bail, error::Result};
 
 use crate::s3::{
   auth::{
@@ -19,7 +20,7 @@ pub async fn multipart_auth(req: Request) -> Result<S3Auth> {
   let signature = StringToSign::new(data.policy).sign(SECRET, &data.credential)?;
 
   if signature != data.signature {
-    return Err(Error::Forbidden);
+    bail!(FORBIDDEN, "Signature mismatch");
   }
 
   Ok(S3Auth {
@@ -57,21 +58,21 @@ async fn parse_multipart(mut multipart: Multipart) -> Result<MultipartData> {
   }
 
   let multipart_data = MultipartData {
-    policy: policy.ok_or(Error::BadRequest)?,
-    algorithm: algorithm.ok_or(Error::BadRequest)?,
-    credential: credential.ok_or(Error::BadRequest)?.parse()?,
-    _date: NaiveDateTime::parse_from_str(&date.ok_or(Error::BadRequest)?, DATE_FORMAT)?,
-    signature: signature.ok_or(Error::BadRequest)?,
+    policy: policy.ok_or_eyre("Missing policy field")?,
+    algorithm: algorithm.ok_or_eyre("Missing algorithm field")?,
+    credential: credential.ok_or_eyre("Missing credential field")?.parse()?,
+    _date: NaiveDateTime::parse_from_str(&date.ok_or_eyre("Missing date field")?, DATE_FORMAT)?,
+    signature: signature.ok_or_eyre("Missing signature field")?,
   };
 
   // check if policy is valid base64
   BASE64_STANDARD
     .decode(&multipart_data.policy)
-    .map_err(|_| Error::BadRequest)?;
+    .context("Invalid policy field")?;
 
   // check algorithm
   if multipart_data.algorithm != ALGORITHM {
-    return Err(Error::NotImplemented);
+    bail!("Only AWS4-HMAC-SHA256 is supported");
   }
 
   Ok(multipart_data)

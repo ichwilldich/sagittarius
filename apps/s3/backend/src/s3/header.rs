@@ -30,10 +30,17 @@ ichwilldich_lib::typed_header!(
 );
 
 typed_header!(
-  AwzContentSha256,
+  AwzContentSha256Header,
   AWZ_CONTENT_SHA256,
   "x-amz-content-sha256",
-  AwzContentSha256Enum
+  AwzContentSha256
+);
+
+typed_header!(
+  AwzDecodedContentLength,
+  AWZ_CONTENT_LENGTH,
+  "x-awz-content-length",
+  u64
 );
 
 typed_header!(AwzAcl, AWZ_ACL, "x-amz-acl", AwzAclEnum);
@@ -65,7 +72,7 @@ typed_header!(
 
 #[derive(Deserialize_enum_str, Serialize_enum_str)]
 #[serde(rename_all = "SCREAMING-KEBAB-CASE")]
-pub enum AwzContentSha256Enum {
+pub enum AwzContentSha256 {
   UnsignedPayload,
   StreamingUnsignedPayloadTrailer,
   StreamingAws4HmacSha256Payload,

@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{fmt::Debug, num::ParseIntError};
 
 use axum::{
   extract::{
@@ -10,58 +10,106 @@ use axum::{
 use axum_extra::typed_header::TypedHeaderRejection;
 use hmac::digest::InvalidLength;
 use http::StatusCode;
-use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, ErrorReport>;
 
-#[derive(Error, Debug)]
-pub enum Error {
-  #[error("BadRequest")]
-  BadRequest,
-  #[error("Unauthorized")]
-  Unauthorized,
-  #[allow(clippy::enum_variant_names)]
-  #[error("InternalServerError")]
-  InternalServerError,
-  #[error("Conflict")]
-  Conflict,
-  #[error("Gone")]
-  Gone,
-  #[error("Forbidden")]
-  Forbidden,
-  #[error("NotImplemented")]
-  NotImplemented,
-  #[error(transparent)]
-  IO(#[from] std::io::Error),
-  #[error(transparent)]
-  InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
-  #[error(transparent)]
-  TypedHeader(#[from] TypedHeaderRejection),
-  #[error(transparent)]
-  Bytes(#[from] BytesRejection),
-  #[error(transparent)]
-  InvalidLength(#[from] InvalidLength),
-  #[error(transparent)]
-  MultipartRejection(#[from] MultipartRejection),
-  #[error(transparent)]
-  MultipartError(#[from] MultipartError),
-  #[error(transparent)]
-  Chrono(#[from] chrono::ParseError),
-  #[error(transparent)]
-  ParseInt(#[from] ParseIntError),
+#[macro_export]
+macro_rules! anyhow {
+  ($status:ident, $msg:literal) => {
+    $crate::error::ErrorReport::new($crate::eyre::eyre!($msg), $crate::http::StatusCode::$status)
+  };
+  ($msg:literal) => {
+    $crate::anyhow!(BAD_REQUEST, $msg)
+  };
+  ($status:ident, $err:expr) => {
+    $crate::error::ErrorReport::new($crate::eyre::eyre!($err), $crate::http::StatusCode::$status)
+  };
+  ($err:expr) => {
+    $crate::anyhow!(BAD_REQUEST, $err)
+  };
+  ($status:ident, $fmt:expr, $($arg:tt)*) => {
+    $crate::error::ErrorReport::new($crate::eyre::eyre!($fmt, $($arg)*), $crate::http::StatusCode::$status)
+  };
+  ($fmt:expr, $($arg:tt)*) => {
+    $crate::anyhow!(BAD_REQUEST, $fmt, $($arg)*)
+  };
 }
 
-impl IntoResponse for Error {
+#[macro_export]
+macro_rules! bail {
+  ($status:ident, $msg:literal) => {
+    return $crate::private::Err($crate::anyhow!($status, $msg));
+  };
+  ($msg:literal) => {
+    return $crate::private::Err($crate::anyhow!($msg));
+  };
+  ($status:ident, $err:expr) => {
+    return $crate::private::Err($crate::anyhow!($status, $err));
+  };
+  ($err:expr) => {
+    return $crate::private::Err($crate::anyhow!($err));
+  };
+  ($status:ident, $fmt:expr, $($arg:tt)*) => {
+    return $crate::private::Err($crate::anyhow!($status, $fmt, $($arg)*));
+  };
+  ($fmt:expr, $($arg:tt)*) => {
+    return $crate::private::Err($crate::anyhow!($fmt, $($arg)*));
+  };
+}
+
+#[macro_export]
+macro_rules! impl_from_error {
+  ($error:ty, $status:expr) => {
+    impl From<$error> for ErrorReport {
+      fn from(value: $error) -> Self {
+        Self {
+          error: eyre::Report::new(value),
+          status: $status,
+        }
+      }
+    }
+  };
+}
+
+pub struct ErrorReport {
+  error: eyre::Report,
+  status: StatusCode,
+}
+
+impl ErrorReport {
+  pub fn new(error: eyre::Report, status: StatusCode) -> Self {
+    Self { error, status }
+  }
+}
+
+impl_from_error!(std::io::Error, StatusCode::INTERNAL_SERVER_ERROR);
+impl_from_error!(http::header::InvalidHeaderValue, StatusCode::BAD_REQUEST);
+impl_from_error!(TypedHeaderRejection, StatusCode::BAD_REQUEST);
+impl_from_error!(BytesRejection, StatusCode::BAD_REQUEST);
+impl_from_error!(InvalidLength, StatusCode::BAD_REQUEST);
+impl_from_error!(MultipartRejection, StatusCode::BAD_REQUEST);
+impl_from_error!(MultipartError, StatusCode::BAD_REQUEST);
+impl_from_error!(chrono::ParseError, StatusCode::BAD_REQUEST);
+impl_from_error!(ParseIntError, StatusCode::BAD_REQUEST);
+
+impl IntoResponse for ErrorReport {
   fn into_response(self) -> Response {
-    tracing::error!("{:?}", &self);
-    match self {
-      Self::Unauthorized => StatusCode::UNAUTHORIZED.into_response(),
-      Self::Conflict => StatusCode::CONFLICT.into_response(),
-      Self::Gone => StatusCode::GONE.into_response(),
-      Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-      Self::Forbidden => StatusCode::FORBIDDEN.into_response(),
-      Self::NotImplemented => StatusCode::NOT_IMPLEMENTED.into_response(),
-      _ => StatusCode::BAD_REQUEST.into_response(),
+    tracing::error!("{:?}", self.error);
+    self.status.into_response()
+  }
+}
+
+impl Debug for ErrorReport {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    <eyre::Report as Debug>::fmt(&self.error, f)
+  }
+}
+
+impl From<eyre::Report> for ErrorReport {
+  fn from(value: eyre::Report) -> Self {
+    Self {
+      error: value,
+      status: StatusCode::BAD_REQUEST,
     }
   }
 }

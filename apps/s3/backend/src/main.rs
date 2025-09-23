@@ -4,6 +4,7 @@ use clap::Parser;
 use dotenv::dotenv;
 use ichwilldich_lib::init::{add_base_layers, init_logging, listener_setup, run_app};
 use tokio::join;
+use tracing::info;
 
 use crate::{config::Config, macros::DualRouterExt};
 
@@ -27,6 +28,7 @@ async fn main() {
     .await
     .layer(Extension(config));
 
+  info!("Starting s3 sever");
   join!(run_app(app_listener, app), run_app(s3_listener, s3));
 }
 

@@ -85,9 +85,9 @@ impl CanonicalRequest {
     // Payload
     let str = match payload {
       Payload::Unsigned => "UNSIGNED-PAYLOAD",
-      Payload::Empty => "EMPTY-PAYLOAD",
+      Payload::Empty => EMPTY_STRING_SHA256_HASH,
       Payload::SingleChunk(data) => &hex::encode(Sha256::digest(data)),
-      Payload::MultipleChunks => "MULTIPLE-CHUNKS-PAYLOAD",
+      Payload::MultipleChunks => "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
     };
     req.push_str(str);
 

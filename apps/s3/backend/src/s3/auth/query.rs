@@ -1,6 +1,6 @@
 use axum::extract::Request;
 use chrono::{DateTime, NaiveDateTime, Utc};
-use ichwilldich_lib::error::{Error, Result};
+use ichwilldich_lib::{bail, error::Result};
 
 use crate::s3::{
   auth::{
@@ -23,7 +23,7 @@ pub async fn query_auth(req: Request, query: &[(String, String)]) -> Result<S3Au
     .sign(SECRET, &data.auth.credential)?;
 
   if signature != data.auth.signature {
-    return Err(Error::Forbidden);
+    bail!(FORBIDDEN, "Signature mismatch");
   }
 
   Ok(S3Auth {
@@ -56,7 +56,7 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
       "X-Amz-SignedHeaders" => {
         let headers = v.split(';').map(|s| s.to_string()).collect::<Vec<_>>();
         if !headers.iter().any(|s| s.eq_ignore_ascii_case("host")) {
-          return Err(Error::BadRequest);
+          bail!("SignedHeaders must contain 'host'");
         }
 
         signed_headers = Some(headers)
@@ -73,7 +73,9 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
     || signed_headers.is_none()
     || signature.is_none()
   {
-    return Err(Error::BadRequest);
+    bail!(
+      "Missing required query parameters algorithm: {algorithm:?}, credential: {credential:?}, date: {date:?}, expires: {expires:?}, signed_headers: {signed_headers:?}, signature: {signature:?}"
+    );
   }
 
   let data = QueryData {
@@ -88,7 +90,7 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
   };
 
   if data.algorithm != ALGORITHM {
-    return Err(Error::BadRequest);
+    bail!("Only AWS4-HMAC-SHA256 is supported");
   }
 
   Ok(data)

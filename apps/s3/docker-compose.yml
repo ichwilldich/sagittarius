@@ -1,6 +1,7 @@
 services:
   frontend:
     image: ghcr.io/profiidev/images/node-alpine-dev:main
+    pull_policy: always
     volumes:
       - ../../:/app
     tty: true
@@ -11,6 +12,7 @@ services:
 
   backend:
     image: ghcr.io/profiidev/images/rust-musl-watch:main
+    pull_policy: always
     volumes:
       - ../../:/app
     networks:
@@ -20,6 +22,8 @@ services:
     tty: true
     entrypoint: ['tini', '--']
     command: ['cargo', 'watch', '-x', 'run', '-C', 'apps/s3/backend']
+    environment:
+      - RUST_LIB_BACKTRACE=0
 
   nginx:
     image: nginx:latest

@@ -7,7 +7,7 @@ use axum_extra::{
   headers::{ContentType, Mime},
 };
 use http::Method;
-use ichwilldich_lib::error::Error;
+use ichwilldich_lib::error::ErrorReport;
 
 use crate::s3::auth::{header::header_auth, multipart::multipart_auth, query::query_auth};
 
@@ -27,7 +27,7 @@ pub struct S3Auth {
 const SECRET: &str = "secret";
 
 impl<S: Sync + Send> FromRequest<S> for S3Auth {
-  type Rejection = Error;
+  type Rejection = ErrorReport;
 
   async fn from_request(req: Request, _state: &S) -> std::result::Result<Self, Self::Rejection> {
     let (mut req, body) = req.into_parts();
