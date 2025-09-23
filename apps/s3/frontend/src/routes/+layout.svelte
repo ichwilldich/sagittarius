@@ -30,8 +30,10 @@
   <Sidebar.Provider class="min-h-screen">
     <AppSidebar />
     <Sidebar.Trigger class="absolute top-3 left-3 flex md:hidden" />
-    <main class="flex min-h-screen w-full">
-      {@render children?.()}
+   <main class="flex-1 min-h-screen min-w-0">
+      <div class="w-full">
+        {@render children?.()}
+      </div>
     </main>
   </Sidebar.Provider>
 {:else}
