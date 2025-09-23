@@ -1,9 +1,13 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { Search, Folder, Plus } from '@lucide/svelte';
+    import { Search, Folder, Plus, BarChart3 } from '@lucide/svelte';
     import { Card, Button, Input } from 'positron-components/components/ui';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+
+    interface Props {
+        children: import('svelte').Snippet;
+    }
 
     let { children }: Props = $props();
     // Beispiel-Daten für Buckets
@@ -118,6 +122,12 @@
                     />
                 </div>
 
+                <!-- Dashboard Button -->
+                <Button onclick={() => goto('/buckets/dashboard')} variant="outline" class="w-full">
+                    <BarChart3 class="h-4 w-4 mr-2" />
+                    Dashboard
+                </Button>
+
                 <!-- Neuer Bucket Button -->
                 <Button onclick={handleNewBucket} class="w-full">
                     <Plus class="h-4 w-4 mr-2" />
@@ -161,7 +171,7 @@
         <!-- Main Content Card -->
         <Card.Root class="flex-1 min-h-0">
             <Card.Content class="h-full p-0">
-                {@render children({ selectedBucket })}
+                {@render children()}
             </Card.Content>
         </Card.Root>
     </div>

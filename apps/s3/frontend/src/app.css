@@ -56,6 +56,21 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.606 0.25 292.717);
+  
+  /* Storage Chart Colors */
+  --color-used: var(--chart-1);
+  --color-available: var(--chart-2);
+  
+  /* File Type Chart Colors */
+  --color-images: var(--chart-1);
+  --color-documents: var(--chart-2);
+  --color-videos: var(--chart-3);
+  --color-archives: var(--chart-4);
+  --color-other: var(--chart-5);
+  
+  /* Activity Chart Colors */
+  --color-uploads: var(--chart-1);
+  --color-downloads: var(--chart-2);
 }
 
 .dark {
