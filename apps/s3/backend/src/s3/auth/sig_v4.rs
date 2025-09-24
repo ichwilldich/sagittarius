@@ -106,7 +106,7 @@ impl CanonicalRequest {
   ) -> StringToSign {
     let mut string_to_sign = String::new();
     // Algorithm
-    string_to_sign.push_str(ALGORITHM_CHUNKED);
+    string_to_sign.push_str(ALGORITHM);
     string_to_sign.push('\n');
 
     // RequestDateTime
@@ -174,7 +174,7 @@ impl StringToSign {
   ) -> String {
     let mut string_to_sign = String::new();
     // Algorithm
-    string_to_sign.push_str(ALGORITHM);
+    string_to_sign.push_str(ALGORITHM_CHUNKED);
     string_to_sign.push('\n');
 
     // RequestDateTime

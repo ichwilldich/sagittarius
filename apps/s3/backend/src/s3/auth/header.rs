@@ -20,7 +20,7 @@ use tracing::instrument;
 use crate::s3::{
   auth::{
     S3Auth, SECRET,
-    credential::{AWS4, AWS4Credential},
+    credential::AWS4,
     sig_v4::{CanonicalRequest, Payload, StringToSign},
   },
   header::{AwzContentSha256, AwzContentSha256Header, AwzDate, AwzDecodedContentLength},
@@ -29,11 +29,25 @@ use crate::s3::{
 #[instrument]
 pub async fn header_auth(req: Request) -> Result<S3Auth> {
   let (mut parts, body) = req.into_parts();
-  let TypedHeader(Authorization(mut auth)) =
-    parts.extract::<TypedHeader<Authorization<AWS4>>>().await?;
+  let mut auth = parts
+    .extract::<TypedHeader<Authorization<AWS4>>>()
+    .await
+    .ok()
+    .map(|TypedHeader(Authorization(auth))| auth);
+
   let TypedHeader(AwzContentSha256Header(content_hash)) = parts
     .extract::<TypedHeader<AwzContentSha256Header>>()
-    .await?;
+    .await
+    .unwrap_or(TypedHeader(AwzContentSha256Header(
+      AwzContentSha256::UnsignedPayload,
+    )));
+
+  if !content_hash.is_unsigned() && auth.is_none() {
+    bail!(
+      FORBIDDEN,
+      "Signed payload type requires Authorization header"
+    );
+  }
 
   let date = {
     if let Ok(TypedHeader(AwzDate(date))) = parts.extract::<TypedHeader<AwzDate>>().await {
@@ -44,7 +58,9 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
       Utc::now()
     }
   };
-  check_headers(&parts, &auth)?;
+  if let Some(auth) = &auth {
+    check_headers(&parts, auth)?;
+  }
 
   let body = if content_hash.is_chunked() {
     BodyOrBytes::Body(body)
@@ -52,10 +68,10 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
     BodyOrBytes::Bytes(Bytes::from_request(Request::from_parts(parts.clone(), body), &()).await?)
   };
   let payload = if let BodyOrBytes::Bytes(bytes) = &body {
-    if bytes.is_empty() {
-      Payload::Empty
-    } else if matches!(content_hash, AwzContentSha256::UnsignedPayload) {
+    if matches!(content_hash, AwzContentSha256::UnsignedPayload) {
       Payload::Unsigned
+    } else if bytes.is_empty() {
+      Payload::Empty
     } else {
       Payload::SingleChunk(bytes)
     }
@@ -63,33 +79,31 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
     Payload::MultipleChunks
   };
 
-  let signature = CanonicalRequest::new(&parts, &mut auth, &payload)
-    .string_to_sign(&date, &auth.credential)
-    .sign(SECRET, &auth.credential)?;
+  let signature = if let Some(auth) = &mut auth {
+    let signature = CanonicalRequest::new(&parts, auth, &payload)
+      .string_to_sign(&date, &auth.credential)
+      .sign(SECRET, &auth.credential)?;
 
-  if signature != auth.signature {
-    bail!(FORBIDDEN, "Signature mismatch");
-  }
+    if signature != auth.signature {
+      bail!(FORBIDDEN, "Signature mismatch");
+    }
+
+    signature
+  } else {
+    String::new()
+  };
 
   let bytes = match body {
     BodyOrBytes::Body(body) => {
       let body = body.into_data_stream();
-      process_chunks(
-        &mut parts,
-        body,
-        &signature,
-        &auth.credential,
-        &date,
-        &content_hash,
-      )
-      .await?
+      process_chunks(&mut parts, body, &signature, &auth, &date, &content_hash).await?
     }
     BodyOrBytes::Bytes(b) => b,
   };
 
   Ok(S3Auth {
-    region: auth.credential.region,
-    access_key: auth.credential.access_key,
+    region: String::new(),
+    access_key: String::new(),
   })
 }
 
@@ -103,7 +117,7 @@ async fn process_chunks(
   parts: &mut Parts,
   mut body: BodyDataStream,
   initial_signature: &str,
-  credential: &AWS4Credential,
+  auth: &Option<AWS4>,
   datetime: &DateTime<Utc>,
   content_hash: &AwzContentSha256,
 ) -> Result<Bytes> {
@@ -138,12 +152,14 @@ async fn process_chunks(
         }
 
         // verify chunk signature
-        let signature = StringToSign::chunked(datetime, credential, &last_signature, &d)
-          .sign(SECRET, credential)?;
-        if signature != meta.signature {
-          bail!(FORBIDDEN, "Chunk signature mismatch");
+        if let Some(auth) = &auth {
+          let signature = StringToSign::chunked(datetime, &auth.credential, &last_signature, &d)
+            .sign(SECRET, &auth.credential)?;
+          if signature != meta.signature {
+            bail!(FORBIDDEN, "Chunk signature mismatch");
+          }
+          last_signature = signature;
         }
-        last_signature = signature;
 
         // remove trailing \r\n
         buffer.drain(..2);
@@ -195,23 +211,25 @@ async fn process_chunks(
     let header_name = header_parts[0].trim();
     let header_value = header_parts[1].trim();
 
-    let signature_parts = parts[1].split(':').collect::<Vec<_>>();
-    if signature_parts.len() != 2 || signature_parts[0].trim() != "x-amz-trailer-signature" {
-      bail!("Invalid trailer signature");
-    }
-    let expected_signature = signature_parts[1].trim();
+    if let Some(auth) = &auth {
+      let signature_parts = parts[1].split(':').collect::<Vec<_>>();
+      if signature_parts.len() != 2 || signature_parts[0].trim() != "x-amz-trailer-signature" {
+        bail!("Invalid trailer signature");
+      }
+      let expected_signature = signature_parts[1].trim();
 
-    let signature = StringToSign::chunked_trailer(
-      datetime,
-      credential,
-      &last_signature,
-      header_name,
-      header_value,
-    )
-    .sign(SECRET, credential)?;
+      let signature = StringToSign::chunked_trailer(
+        datetime,
+        &auth.credential,
+        &last_signature,
+        header_name,
+        header_value,
+      )
+      .sign(SECRET, &auth.credential)?;
 
-    if signature != expected_signature {
-      bail!(FORBIDDEN, "Trailer signature mismatch");
+      if signature != expected_signature {
+        bail!(FORBIDDEN, "Trailer signature mismatch");
+      }
     }
   }
 

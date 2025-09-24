@@ -18,7 +18,7 @@ mod multipart;
 mod query;
 mod sig_v4;
 
-/// TODO: body handling, credential lookup, expiration check, region check, multi chunk handling
+/// TODO: body handling, maybe body caching, credential lookup, expiration check, region check
 /// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
 pub struct S3Auth {
   region: String,
