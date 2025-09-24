@@ -3,6 +3,7 @@ use base64::prelude::*;
 use chrono::NaiveDateTime;
 use eyre::{Context, OptionExt};
 use ichwilldich_lib::{bail, error::Result};
+use tracing::instrument;
 
 use crate::s3::{
   auth::{
@@ -13,6 +14,7 @@ use crate::s3::{
   header::DATE_FORMAT,
 };
 
+#[instrument]
 pub async fn multipart_auth(req: Request) -> Result<S3Auth> {
   let multipart = Multipart::from_request(req, &()).await?;
   let data = parse_multipart(multipart).await?;
@@ -37,6 +39,7 @@ struct MultipartData {
   signature: String,
 }
 
+#[instrument]
 async fn parse_multipart(mut multipart: Multipart) -> Result<MultipartData> {
   let mut policy = None;
   let mut algorithm = None;

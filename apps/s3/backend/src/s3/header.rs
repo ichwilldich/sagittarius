@@ -70,7 +70,7 @@ typed_header!(
   AwzObjectOwnershipEnum
 );
 
-#[derive(Deserialize_enum_str, Serialize_enum_str)]
+#[derive(Deserialize_enum_str, Serialize_enum_str, Debug)]
 #[serde(rename_all = "SCREAMING-KEBAB-CASE")]
 pub enum AwzContentSha256 {
   UnsignedPayload,
@@ -79,6 +79,17 @@ pub enum AwzContentSha256 {
   StreamingAAws4HmacSha256PayloadTrailer,
   #[serde(other)]
   SingleChunk(String),
+}
+
+impl AwzContentSha256 {
+  pub fn is_chunked(&self) -> bool {
+    matches!(
+      self,
+      AwzContentSha256::StreamingUnsignedPayloadTrailer
+        | AwzContentSha256::StreamingAws4HmacSha256Payload
+        | AwzContentSha256::StreamingAAws4HmacSha256PayloadTrailer
+    )
+  }
 }
 
 #[derive(Deserialize_enum_str, Serialize_enum_str)]

@@ -61,6 +61,7 @@ macro_rules! bail {
 macro_rules! impl_from_error {
   ($error:ty, $status:expr) => {
     impl From<$error> for ErrorReport {
+      #[track_caller]
       fn from(value: $error) -> Self {
         Self {
           error: eyre::Report::new(value),

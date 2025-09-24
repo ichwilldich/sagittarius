@@ -3,6 +3,7 @@ use hmac::{Hmac, Mac};
 use http::request::Parts;
 use ichwilldich_lib::error::Result;
 use sha2::{Digest, Sha256};
+use tracing::instrument;
 
 use crate::s3::{
   auth::credential::{AWS4, AWS4Credential},
@@ -14,7 +15,9 @@ const EMPTY_STRING_SHA256_HASH: &str =
   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
 pub const ALGORITHM: &str = "AWS4-HMAC-SHA256";
+pub const ALGORITHM_CHUNKED: &str = "AWS4-HMAC-SHA256-PAYLOAD";
 
+#[derive(Debug)]
 pub enum Payload<'a> {
   Unsigned,
   Empty,
@@ -26,6 +29,7 @@ pub enum Payload<'a> {
 pub struct CanonicalRequest(String);
 
 impl CanonicalRequest {
+  #[instrument]
   pub fn new(parts: &Parts, auth: &mut AWS4, payload: &Payload) -> CanonicalRequest {
     let mut req = String::new();
     // HTTPMethod
@@ -94,6 +98,7 @@ impl CanonicalRequest {
     CanonicalRequest(req)
   }
 
+  #[instrument]
   pub fn string_to_sign(
     &self,
     amz_date: &DateTime<Utc>,
@@ -101,7 +106,7 @@ impl CanonicalRequest {
   ) -> StringToSign {
     let mut string_to_sign = String::new();
     // Algorithm
-    string_to_sign.push_str(ALGORITHM);
+    string_to_sign.push_str(ALGORITHM_CHUNKED);
     string_to_sign.push('\n');
 
     // RequestDateTime
@@ -129,6 +134,42 @@ impl StringToSign {
     Self(s)
   }
 
+  pub fn chunked(
+    datetime: &DateTime<Utc>,
+    credential: &AWS4Credential,
+    previous_signature: &str,
+    current_data: &[u8],
+  ) -> Self {
+    let mut string_to_sign = String::new();
+    // Algorithm
+    string_to_sign.push_str(ALGORITHM);
+    string_to_sign.push('\n');
+
+    // RequestDateTime
+    string_to_sign.push_str(&datetime.format(DATE_FORMAT).to_string());
+    string_to_sign.push('\n');
+
+    // CredentialScope
+    string_to_sign.push_str(&format!(
+      "{}/{}/s3/aws4_request\n",
+      credential.date, credential.region
+    ));
+
+    // PreviousSignature
+    string_to_sign.push_str(previous_signature);
+    string_to_sign.push('\n');
+
+    // HashedEmptyString
+    string_to_sign.push_str(EMPTY_STRING_SHA256_HASH);
+    string_to_sign.push('\n');
+
+    // HashedChunkData
+    string_to_sign.push_str(&hex::encode(Sha256::digest(current_data)));
+
+    StringToSign(string_to_sign)
+  }
+
+  #[instrument]
   pub fn sign(&self, secret_key: &str, credential: &AWS4Credential) -> Result<String> {
     let date_key = hmac(format!("AWS4{}", secret_key).as_bytes(), &credential.date)?;
     let date_region_key = hmac(&date_key, &credential.region)?;

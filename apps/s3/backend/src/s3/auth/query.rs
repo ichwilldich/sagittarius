@@ -1,6 +1,7 @@
 use axum::extract::Request;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use ichwilldich_lib::{bail, error::Result};
+use tracing::instrument;
 
 use crate::s3::{
   auth::{
@@ -12,6 +13,7 @@ use crate::s3::{
   header::DATE_FORMAT,
 };
 
+#[instrument]
 pub async fn query_auth(req: Request, query: &[(String, String)]) -> Result<S3Auth> {
   let mut data = parse_query(query)?;
   let (parts, _body) = req.into_parts();
@@ -39,6 +41,7 @@ struct QueryData {
   auth: AWS4,
 }
 
+#[instrument]
 fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
   let mut algorithm = None;
   let mut credential = None;

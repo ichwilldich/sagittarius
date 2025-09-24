@@ -3,7 +3,9 @@ use std::str::FromStr;
 use axum_extra::headers::authorization::Credentials;
 use http::HeaderValue;
 use ichwilldich_lib::{bail, error::ErrorReport};
+use tracing::instrument;
 
+#[derive(Debug)]
 pub struct AWS4 {
   pub credential: AWS4Credential,
   pub signed_headers: Vec<String>,
@@ -20,6 +22,7 @@ pub struct AWS4Credential {
 impl Credentials for AWS4 {
   const SCHEME: &'static str = "AWS4-HMAC-SHA256";
 
+  #[instrument]
   fn decode(value: &HeaderValue) -> Option<Self> {
     debug_assert!(
       value.as_bytes()[..Self::SCHEME.len()].eq_ignore_ascii_case(Self::SCHEME.as_bytes()),
@@ -84,6 +87,7 @@ impl Credentials for AWS4 {
 impl FromStr for AWS4Credential {
   type Err = ErrorReport;
 
+  #[instrument]
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let parts = s.split('/').collect::<Vec<_>>();
     if parts.len() != 5 || parts[3] != "s3" || parts[4] != "aws4_request" {
