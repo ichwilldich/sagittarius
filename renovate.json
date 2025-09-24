@@ -1,15 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "schedule:earlyMondays"
-  ],
+  "extends": ["config:recommended", "schedule:earlyMondays"],
   "packageRules": [
     {
       "groupName": "{{manager}}",
-      "matchPackageNames": [
-        "*"
-      ]
+      "matchPackageNames": ["*"]
     },
     {
       "matchPackageNames": [
