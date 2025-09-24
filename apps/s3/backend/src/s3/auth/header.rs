@@ -10,7 +10,7 @@ use axum_extra::{
   headers::{Authorization, ContentEncoding, Date},
 };
 use chrono::{DateTime, Utc};
-use eyre::OptionExt;
+use eyre::{Context, OptionExt};
 use futures::StreamExt;
 use http::request::Parts;
 use ichwilldich_lib::{bail, error::Result};
@@ -74,7 +74,15 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
   let bytes = match body {
     BodyOrBytes::Body(body) => {
       let body = body.into_data_stream();
-      process_chunks(&mut parts, body, &signature, &auth.credential, &date).await?
+      process_chunks(
+        &mut parts,
+        body,
+        &signature,
+        &auth.credential,
+        &date,
+        &content_hash,
+      )
+      .await?
     }
     BodyOrBytes::Bytes(b) => b,
   };
@@ -97,6 +105,7 @@ async fn process_chunks(
   initial_signature: &str,
   credential: &AWS4Credential,
   datetime: &DateTime<Utc>,
+  content_hash: &AwzContentSha256,
 ) -> Result<Bytes> {
   let TypedHeader(encoding) = parts.extract::<TypedHeader<ContentEncoding>>().await?;
   if !encoding.contains("aws-chunked") {
@@ -111,6 +120,7 @@ async fn process_chunks(
   let mut current_meta: Option<ChunkMeta> = None;
   let mut data = Vec::new();
   let mut last_signature = initial_signature.to_string();
+  let trailer = content_hash.is_trailer();
 
   while let Some(chunk) = body.next().await {
     let Ok(chunk) = chunk else {
@@ -139,7 +149,8 @@ async fn process_chunks(
         buffer.drain(..2);
         data.extend_from_slice(&d);
 
-        if meta.length == 0 {
+        // don't break if there is a trailer chunk and exit automatically when the stream ends
+        if meta.length == 0 && trailer {
           break;
         }
         current_meta = None;
@@ -168,6 +179,40 @@ async fn process_chunks(
 
   if data.len() != length as usize {
     bail!("Decoded content length mismatch");
+  }
+
+  if trailer {
+    let str = str::from_utf8(&buffer).context("Invalid trailer")?;
+    let parts = str.split('\n').collect::<Vec<_>>();
+    if parts.len() != 2 {
+      bail!("Invalid trailer");
+    }
+
+    let header_parts = parts[0].split(':').collect::<Vec<_>>();
+    if header_parts.len() != 2 {
+      bail!("Invalid trailer header");
+    }
+    let header_name = header_parts[0].trim();
+    let header_value = header_parts[1].trim();
+
+    let signature_parts = parts[1].split(':').collect::<Vec<_>>();
+    if signature_parts.len() != 2 || signature_parts[0].trim() != "x-amz-trailer-signature" {
+      bail!("Invalid trailer signature");
+    }
+    let expected_signature = signature_parts[1].trim();
+
+    let signature = StringToSign::chunked_trailer(
+      datetime,
+      credential,
+      &last_signature,
+      header_name,
+      header_value,
+    )
+    .sign(SECRET, credential)?;
+
+    if signature != expected_signature {
+      bail!(FORBIDDEN, "Trailer signature mismatch");
+    }
   }
 
   Ok(Bytes::from(data))

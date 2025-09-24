@@ -140,6 +140,38 @@ impl StringToSign {
     previous_signature: &str,
     current_data: &[u8],
   ) -> Self {
+    let mut string_to_sign = Self::chunked_base(datetime, credential, previous_signature);
+
+    // HashedEmptyString
+    string_to_sign.push_str(EMPTY_STRING_SHA256_HASH);
+    string_to_sign.push('\n');
+
+    // HashedChunkData
+    string_to_sign.push_str(&hex::encode(Sha256::digest(current_data)));
+
+    StringToSign(string_to_sign)
+  }
+
+  pub fn chunked_trailer(
+    datetime: &DateTime<Utc>,
+    credential: &AWS4Credential,
+    previous_signature: &str,
+    tailing_header_name: &str,
+    trailing_header_value: &str,
+  ) -> Self {
+    let mut string_to_sign = Self::chunked_base(datetime, credential, previous_signature);
+
+    // Trailing checksum header
+    string_to_sign.push_str(&format!("{tailing_header_name}:{trailing_header_value}\n"));
+
+    StringToSign(string_to_sign)
+  }
+
+  fn chunked_base(
+    datetime: &DateTime<Utc>,
+    credential: &AWS4Credential,
+    previous_signature: &str,
+  ) -> String {
     let mut string_to_sign = String::new();
     // Algorithm
     string_to_sign.push_str(ALGORITHM);
@@ -159,14 +191,7 @@ impl StringToSign {
     string_to_sign.push_str(previous_signature);
     string_to_sign.push('\n');
 
-    // HashedEmptyString
-    string_to_sign.push_str(EMPTY_STRING_SHA256_HASH);
-    string_to_sign.push('\n');
-
-    // HashedChunkData
-    string_to_sign.push_str(&hex::encode(Sha256::digest(current_data)));
-
-    StringToSign(string_to_sign)
+    string_to_sign
   }
 
   #[instrument]

@@ -90,6 +90,21 @@ impl AwzContentSha256 {
         | AwzContentSha256::StreamingAAws4HmacSha256PayloadTrailer
     )
   }
+
+  pub fn is_trailer(&self) -> bool {
+    matches!(
+      self,
+      AwzContentSha256::StreamingUnsignedPayloadTrailer
+        | AwzContentSha256::StreamingAAws4HmacSha256PayloadTrailer
+    )
+  }
+
+  pub fn is_unsigned(&self) -> bool {
+    matches!(
+      self,
+      AwzContentSha256::UnsignedPayload | AwzContentSha256::StreamingUnsignedPayloadTrailer
+    )
+  }
 }
 
 #[derive(Deserialize_enum_str, Serialize_enum_str)]
