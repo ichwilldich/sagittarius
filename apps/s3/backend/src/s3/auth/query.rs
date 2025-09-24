@@ -5,7 +5,7 @@ use tracing::instrument;
 
 use crate::s3::{
   auth::{
-    S3Auth, SECRET,
+    Identity, S3Auth, SECRET,
     credential::AWS4,
     header::check_headers,
     sig_v4::{ALGORITHM, CanonicalRequest, Payload},
@@ -29,15 +29,13 @@ pub async fn query_auth(req: Request, query: &[(String, String)]) -> Result<S3Au
   }
 
   Ok(S3Auth {
-    region: data.auth.credential.region,
-    access_key: data.auth.credential.access_key,
+    identity: Identity::AccessKey(data.auth.credential.access_key),
   })
 }
 
 struct QueryData {
   algorithm: String,
   date: NaiveDateTime,
-  expires: u32,
   auth: AWS4,
 }
 
@@ -81,10 +79,23 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
     );
   }
 
+  let expires = expires.unwrap();
+  // Expires must be between 1 and 604800 seconds (7 days)
+  if expires == 0 || expires > 604800 {
+    bail!(
+      FORBIDDEN,
+      "X-Amz-Expires must be between 1 and 604800 seconds"
+    );
+  }
+
+  let date = date.unwrap();
+  if (Utc::now().naive_utc() - date).num_seconds() > expires {
+    bail!(FORBIDDEN, "Request has expired");
+  }
+
   let data = QueryData {
     algorithm: algorithm.unwrap(),
-    date: date.unwrap(),
-    expires: expires.unwrap(),
+    date,
     auth: AWS4 {
       credential: credential.unwrap(),
       signed_headers: signed_headers.unwrap(),

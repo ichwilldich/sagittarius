@@ -19,7 +19,7 @@ use tracing::instrument;
 
 use crate::s3::{
   auth::{
-    S3Auth, SECRET,
+    Identity, S3Auth, SECRET,
     credential::AWS4,
     sig_v4::{CanonicalRequest, Payload, StringToSign},
   },
@@ -102,8 +102,7 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
   };
 
   Ok(S3Auth {
-    region: String::new(),
-    access_key: String::new(),
+    identity: Identity::Anonymous,
   })
 }
 

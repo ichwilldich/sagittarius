@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
 use axum_extra::headers::authorization::Credentials;
+use chrono::NaiveDate;
+use eyre::Context;
 use http::HeaderValue;
 use ichwilldich_lib::{bail, error::ErrorReport};
 use tracing::instrument;
@@ -92,6 +94,13 @@ impl FromStr for AWS4Credential {
     let parts = s.split('/').collect::<Vec<_>>();
     if parts.len() != 5 || parts[3] != "s3" || parts[4] != "aws4_request" {
       bail!("Invalid AWS4 credential format {s}");
+    }
+
+    let date =
+      NaiveDate::parse_from_str(parts[1], "%Y%m%d").context("Invalid date in AWS4 credential")?;
+    // check if date is older than 7 days
+    if (chrono::Utc::now().naive_utc().date() - date).num_days() > 7 {
+      bail!(FORBIDDEN, "AWS4 credential is expired");
     }
 
     Ok(AWS4Credential {
