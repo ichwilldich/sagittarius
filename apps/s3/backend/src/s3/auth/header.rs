@@ -20,7 +20,7 @@ use tracing::instrument;
 use crate::s3::{
   auth::{
     S3Auth, SECRET,
-    credential::{self, AWS4, AWS4Credential},
+    credential::{AWS4, AWS4Credential},
     sig_v4::{CanonicalRequest, Payload, StringToSign},
   },
   header::{AwzContentSha256, AwzContentSha256Header, AwzDate, AwzDecodedContentLength},
