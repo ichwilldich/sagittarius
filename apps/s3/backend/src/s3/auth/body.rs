@@ -15,8 +15,11 @@ pub trait Body: Sized {
 }
 
 /// A temporary file that will be deleted when dropped
+/// This should be used for file uploads because they can be large
+#[allow(unused)]
 pub struct TmpFile(pub PathBuf);
 #[derive(Debug)]
+#[allow(unused)]
 pub struct FileWriter(File, PathBuf);
 
 impl Drop for TmpFile {
@@ -48,6 +51,14 @@ impl Body for Vec<u8> {
 
   fn from_writer(writer: Self::Writer) -> Result<Self> {
     Ok(writer)
+  }
+}
+
+impl<T: Body> Body for Option<T> {
+  type Writer = T::Writer;
+
+  fn from_writer(writer: Self::Writer) -> Result<Self> {
+    Ok(T::from_writer(writer).ok())
   }
 }
 

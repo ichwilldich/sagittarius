@@ -17,13 +17,9 @@ pub fn router() -> Router {
 async fn create_bucket(
   storage: StorageState,
   Path(bucket): Path<String>,
-  S3Auth {
-    body: Xml(xml),
-    identity,
-    ..
-  }: S3Auth<Xml<CreateBucketConfiguration>>,
+  S3Auth { body, identity, .. }: S3Auth<Option<Xml<CreateBucketConfiguration>>>,
 ) -> Result<HeaderMap> {
-  dbg!(&xml);
+  dbg!(&body);
   match identity {
     Identity::AccessKey(key) => {
       tracing::info!("AccessKey {key} creating bucket {bucket}");

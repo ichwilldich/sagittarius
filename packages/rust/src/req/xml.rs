@@ -7,6 +7,7 @@ use http::StatusCode;
 use serde::Deserialize;
 use thiserror::Error;
 
+#[derive(Debug)]
 pub struct Xml<T: for<'de> Deserialize<'de>>(pub T);
 
 impl<T: for<'de> Deserialize<'de>> Xml<T> {
