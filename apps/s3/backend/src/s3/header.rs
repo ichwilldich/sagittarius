@@ -63,13 +63,13 @@ typed_header!(
   "x-amz-grant-write-acp"
 );
 
-#[derive(Deserialize_enum_str, Serialize_enum_str, Debug)]
+#[derive(Deserialize_enum_str, Serialize_enum_str, Debug, PartialEq)]
 #[serde(rename_all = "SCREAMING-KEBAB-CASE")]
 pub enum AwzContentSha256 {
   UnsignedPayload,
   StreamingUnsignedPayloadTrailer,
   StreamingAws4HmacSha256Payload,
-  StreamingAAws4HmacSha256PayloadTrailer,
+  StreamingAws4HmacSha256PayloadTrailer,
   #[serde(other)]
   SingleChunk(String),
 }
@@ -80,7 +80,7 @@ impl AwzContentSha256 {
       self,
       AwzContentSha256::StreamingUnsignedPayloadTrailer
         | AwzContentSha256::StreamingAws4HmacSha256Payload
-        | AwzContentSha256::StreamingAAws4HmacSha256PayloadTrailer
+        | AwzContentSha256::StreamingAws4HmacSha256PayloadTrailer
     )
   }
 
@@ -88,7 +88,7 @@ impl AwzContentSha256 {
     matches!(
       self,
       AwzContentSha256::StreamingUnsignedPayloadTrailer
-        | AwzContentSha256::StreamingAAws4HmacSha256PayloadTrailer
+        | AwzContentSha256::StreamingAws4HmacSha256PayloadTrailer
     )
   }
 
@@ -97,5 +97,74 @@ impl AwzContentSha256 {
       self,
       AwzContentSha256::UnsignedPayload | AwzContentSha256::StreamingUnsignedPayloadTrailer
     )
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use axum_extra::headers::Header;
+  use chrono::{NaiveDate, NaiveTime};
+  use http::HeaderValue;
+
+  use super::*;
+
+  #[test]
+  fn awz_date() {
+    let value = HeaderValue::from_static("20230915T123456Z");
+    let date = AwzDate::decode(&mut std::iter::once(&value)).unwrap();
+    assert_eq!(
+      date.0,
+      NaiveDateTime::new(
+        NaiveDate::from_ymd_opt(2023, 9, 15).unwrap(),
+        NaiveTime::from_hms_opt(12, 34, 56).unwrap()
+      )
+    );
+  }
+
+  #[test]
+  fn awz_content_sha256() {
+    for (raw, expected) in [
+      ("UNSIGNED-PAYLOAD", AwzContentSha256::UnsignedPayload),
+      (
+        "STREAMING-UNSIGNED-PAYLOAD-TRAILER",
+        AwzContentSha256::StreamingUnsignedPayloadTrailer,
+      ),
+      (
+        "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+        AwzContentSha256::StreamingAws4HmacSha256Payload,
+      ),
+      (
+        "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+        AwzContentSha256::StreamingAws4HmacSha256PayloadTrailer,
+      ),
+      (
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        AwzContentSha256::SingleChunk(
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string(),
+        ),
+      ),
+    ] {
+      let value = HeaderValue::from_static(raw);
+      let sha256 = AwzContentSha256Header::decode(&mut std::iter::once(&value)).unwrap();
+      assert_eq!(sha256.0, expected);
+
+      if raw.contains("STREAMING") {
+        assert!(sha256.0.is_chunked());
+      } else {
+        assert!(!sha256.0.is_chunked());
+      }
+
+      if raw.contains("TRAILER") {
+        assert!(sha256.0.is_trailer());
+      } else {
+        assert!(!sha256.0.is_trailer());
+      }
+
+      if raw.contains("UNSIGNED") {
+        assert!(sha256.0.is_unsigned());
+      } else {
+        assert!(!sha256.0.is_unsigned());
+      }
+    }
   }
 }

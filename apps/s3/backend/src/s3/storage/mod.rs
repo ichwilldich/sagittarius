@@ -40,7 +40,7 @@ pub trait Storage {
   }
 }
 
-#[derive(ValueEnum, Clone, Copy)]
+#[derive(ValueEnum, Clone, Copy, PartialEq, Debug)]
 pub enum StorageType {
   NoRaid,
 }

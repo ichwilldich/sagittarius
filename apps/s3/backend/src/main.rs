@@ -49,9 +49,15 @@ router_extension!(
 );
 
 #[cfg(test)]
-mod tests {
-  #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
+mod test {
+  use clap::Parser;
+
+  #[tokio::test]
+  async fn router() {
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+    }
+    // test if there are any handler setup error that are not caught at compile time
+    let _ = super::router(&super::Config::parse_from([""])).await;
   }
 }
