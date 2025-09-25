@@ -18,10 +18,9 @@ pub const ALGORITHM: &str = "AWS4-HMAC-SHA256";
 pub const ALGORITHM_CHUNKED: &str = "AWS4-HMAC-SHA256-PAYLOAD";
 
 #[derive(Debug)]
-pub enum Payload<'a> {
+pub enum Payload {
   Unsigned,
-  Empty,
-  SingleChunk(&'a [u8]),
+  SingleChunk(String),
   MultipleChunks,
 }
 
@@ -89,8 +88,7 @@ impl CanonicalRequest {
     // Payload
     let str = match payload {
       Payload::Unsigned => "UNSIGNED-PAYLOAD",
-      Payload::Empty => EMPTY_STRING_SHA256_HASH,
-      Payload::SingleChunk(data) => &hex::encode(Sha256::digest(data)),
+      Payload::SingleChunk(hash) => hash,
       Payload::MultipleChunks => "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
     };
     req.push_str(str);

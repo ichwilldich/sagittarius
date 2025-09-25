@@ -1,11 +1,13 @@
 use axum::extract::Request;
 use chrono::{DateTime, NaiveDateTime, Utc};
+use futures::StreamExt;
 use ichwilldich_lib::{bail, error::Result};
 use tracing::instrument;
 
 use crate::s3::{
   auth::{
     Identity, S3Auth, SECRET,
+    body::{Body, BodyWriter},
     credential::AWS4,
     header::check_headers,
     sig_v4::{ALGORITHM, CanonicalRequest, Payload},
@@ -14,9 +16,9 @@ use crate::s3::{
 };
 
 #[instrument]
-pub async fn query_auth(req: Request, query: &[(String, String)]) -> Result<S3Auth> {
+pub async fn query_auth<T: Body>(req: Request, query: &[(String, String)]) -> Result<S3Auth<T>> {
   let mut data = parse_query(query)?;
-  let (parts, _body) = req.into_parts();
+  let (parts, body) = req.into_parts();
 
   check_headers(&parts, &data.auth)?;
   let date = DateTime::<Utc>::from_naive_utc_and_offset(data.date, Utc);
@@ -28,8 +30,20 @@ pub async fn query_auth(req: Request, query: &[(String, String)]) -> Result<S3Au
     bail!(FORBIDDEN, "Signature mismatch");
   }
 
+  let mut writer = T::Writer::new().await?;
+  let mut stream = body.into_data_stream();
+
+  while let Some(chunk) = stream.next().await {
+    if let Ok(chunk) = chunk {
+      writer.write(&chunk).await?;
+    } else {
+      bail!(INTERNAL_SERVER_ERROR, "Error reading body");
+    }
+  }
+
   Ok(S3Auth {
     identity: Identity::AccessKey(data.auth.credential.access_key),
+    body: T::from_writer(writer)?,
   })
 }
 

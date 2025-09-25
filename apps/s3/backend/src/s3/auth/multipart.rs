@@ -8,6 +8,7 @@ use tracing::instrument;
 use crate::s3::{
   auth::{
     Identity, S3Auth, SECRET,
+    body::Body,
     credential::AWS4Credential,
     sig_v4::{ALGORITHM, StringToSign},
   },
@@ -15,7 +16,7 @@ use crate::s3::{
 };
 
 #[instrument]
-pub async fn multipart_auth(req: Request) -> Result<S3Auth> {
+pub async fn multipart_auth<T: Body>(req: Request) -> Result<S3Auth<T>> {
   let multipart = Multipart::from_request(req, &()).await?;
   let data = parse_multipart(multipart).await?;
 
@@ -27,6 +28,7 @@ pub async fn multipart_auth(req: Request) -> Result<S3Auth> {
 
   Ok(S3Auth {
     identity: Identity::AccessKey(data.credential.access_key),
+    body: todo!(),
   })
 }
 

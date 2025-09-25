@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use axum::{
   RequestPartsExt,
   body::{Body, BodyDataStream, Bytes},
-  extract::{FromRequest, Request},
+  extract::Request,
 };
 use axum_extra::{
   TypedHeader,
@@ -15,11 +15,13 @@ use futures::StreamExt;
 use http::request::Parts;
 use ichwilldich_lib::{bail, error::Result};
 use memchr::memchr;
+use sha2::{Digest, Sha256};
 use tracing::instrument;
 
 use crate::s3::{
   auth::{
     Identity, S3Auth, SECRET,
+    body::{Body as BodyTrait, BodyWriter},
     credential::AWS4,
     sig_v4::{CanonicalRequest, Payload, StringToSign},
   },
@@ -27,7 +29,7 @@ use crate::s3::{
 };
 
 #[instrument]
-pub async fn header_auth(req: Request) -> Result<S3Auth> {
+pub async fn header_auth<T: BodyTrait>(req: Request) -> Result<S3Auth<T>> {
   let (mut parts, body) = req.into_parts();
   let mut auth = parts
     .extract::<TypedHeader<Authorization<AWS4>>>()
@@ -62,18 +64,28 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
     check_headers(&parts, auth)?;
   }
 
+  let mut writer = T::Writer::new().await?;
   let body = if content_hash.is_chunked() {
-    BodyOrBytes::Body(body)
+    BodyOrHash::Body(body)
   } else {
-    BodyOrBytes::Bytes(Bytes::from_request(Request::from_parts(parts.clone(), body), &()).await?)
+    let mut stream = body.into_data_stream();
+    let mut sha256 = Sha256::new();
+    while let Some(chunk) = stream.next().await {
+      if let Ok(chunk) = chunk {
+        sha256.update(&chunk);
+        writer.write(&chunk).await?;
+      } else {
+        bail!(INTERNAL_SERVER_ERROR, "Error reading body");
+      }
+    }
+    BodyOrHash::Hash(hex::encode(sha256.finalize()))
   };
-  let payload = if let BodyOrBytes::Bytes(bytes) = &body {
+
+  let payload = if let BodyOrHash::Hash(hash) = &body {
     if matches!(content_hash, AwzContentSha256::UnsignedPayload) {
       Payload::Unsigned
-    } else if bytes.is_empty() {
-      Payload::Empty
     } else {
-      Payload::SingleChunk(bytes)
+      Payload::SingleChunk(hash.clone())
     }
   } else {
     Payload::MultipleChunks
@@ -93,22 +105,33 @@ pub async fn header_auth(req: Request) -> Result<S3Auth> {
     String::new()
   };
 
-  let bytes = match body {
-    BodyOrBytes::Body(body) => {
-      let body = body.into_data_stream();
-      process_chunks(&mut parts, body, &signature, &auth, &date, &content_hash).await?
-    }
-    BodyOrBytes::Bytes(b) => b,
+  if let BodyOrHash::Body(body) = body {
+    let body = body.into_data_stream();
+    process_chunks(
+      &mut parts,
+      body,
+      &signature,
+      &auth,
+      &date,
+      &content_hash,
+      &mut writer,
+    )
+    .await?;
   };
 
   Ok(S3Auth {
-    identity: Identity::Anonymous,
+    identity: if let Some(auth) = auth {
+      Identity::AccessKey(auth.credential.access_key)
+    } else {
+      Identity::Anonymous
+    },
+    body: T::from_writer(writer)?,
   })
 }
 
-enum BodyOrBytes {
+enum BodyOrHash {
   Body(Body),
-  Bytes(Bytes),
+  Hash(String),
 }
 
 #[instrument]
@@ -119,6 +142,7 @@ async fn process_chunks(
   auth: &Option<AWS4>,
   datetime: &DateTime<Utc>,
   content_hash: &AwzContentSha256,
+  writer: &mut impl BodyWriter,
 ) -> Result<Bytes> {
   let TypedHeader(encoding) = parts.extract::<TypedHeader<ContentEncoding>>().await?;
   if !encoding.contains("aws-chunked") {

@@ -10,8 +10,11 @@ use http::Method;
 use ichwilldich_lib::error::ErrorReport;
 use tracing::instrument;
 
-use crate::s3::auth::{header::header_auth, multipart::multipart_auth, query::query_auth};
+use crate::s3::auth::{
+  body::Body, header::header_auth, multipart::multipart_auth, query::query_auth,
+};
 
+mod body;
 mod credential;
 mod header;
 mod multipart;
@@ -20,8 +23,9 @@ mod sig_v4;
 
 /// TODO: body handling, maybe body caching,      DB: credential lookup, region check
 /// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
-pub struct S3Auth {
-  identity: Identity,
+pub struct S3Auth<T: Body = ()> {
+  pub identity: Identity,
+  pub body: T,
 }
 
 #[derive(Debug)]
@@ -32,7 +36,7 @@ pub enum Identity {
 
 const SECRET: &str = "secret";
 
-impl<S: Sync + Send> FromRequest<S> for S3Auth {
+impl<S: Sync + Send, T: Body> FromRequest<S> for S3Auth<T> {
   type Rejection = ErrorReport;
 
   #[instrument(skip(_state))]

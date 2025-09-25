@@ -1,9 +1,13 @@
 use axum::{Router, extract::Path, routing::put};
 use http::HeaderMap;
-use ichwilldich_lib::{bail, error::Result, path};
+use ichwilldich_lib::{bail, error::Result, path, req::xml::Xml};
 use serde::Deserialize;
 
-use crate::s3::{auth::S3Auth, operations::BUCKET_DIR, storage::StorageState};
+use crate::s3::{
+  auth::{Identity, S3Auth},
+  operations::BUCKET_DIR,
+  storage::StorageState,
+};
 
 pub fn router() -> Router {
   Router::new().route("/{*bucket}", put(create_bucket))
@@ -11,13 +15,23 @@ pub fn router() -> Router {
 
 /// TODO: Handling of additional header options
 async fn create_bucket(
-  h: HeaderMap,
   storage: StorageState,
   Path(bucket): Path<String>,
-  auth: S3Auth,
-  //Xml(_req): Xml<CreateBucketConfiguration>,
+  S3Auth {
+    body: Xml(xml),
+    identity,
+  }: S3Auth<Xml<CreateBucketConfiguration>>,
 ) -> Result<HeaderMap> {
-  dbg!(&h);
+  dbg!(&xml);
+  match identity {
+    Identity::AccessKey(key) => {
+      tracing::info!("AccessKey {key} creating bucket {bucket}");
+    }
+    Identity::Anonymous => {
+      tracing::warn!("Anonymous access to create bucket");
+    }
+  }
+
   if storage
     .list_dir(&path!(BUCKET_DIR))
     .await?
@@ -35,5 +49,5 @@ async fn create_bucket(
 }
 
 /// TODO: Handling of additional configuration options
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct CreateBucketConfiguration {}

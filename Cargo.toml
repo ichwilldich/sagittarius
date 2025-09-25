@@ -5,7 +5,7 @@ members = ["apps/s3/backend", "packages/rust", "packages/rust-derive"]
 [workspace.dependencies]
 ichwilldich-lib = { path = "packages/rust" }
 
-uuid = "1.18.1"
+uuid = { version = "1.18.1", features = ["v4"] }
 axum = { version = "0.8.4", features = [
   "macros",
   "ws",
