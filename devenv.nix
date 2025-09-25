@@ -6,6 +6,7 @@
     openssl
     cargo-watch
     cargo-nextest
+    git
   ];
 
   languages = {
