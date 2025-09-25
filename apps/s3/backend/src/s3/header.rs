@@ -43,7 +43,6 @@ typed_header!(
   u64
 );
 
-typed_header!(AwzAcl, AWZ_ACL, "x-amz-acl", AwzAclEnum);
 typed_header!(
   AwzBucketObjectLockEnabled,
   AWZ_BUCKET_OBJECT_LOCK_ENABLED,
@@ -62,12 +61,6 @@ typed_header!(
   AwzGrantWriteAcp,
   AWZ_GRANT_WRITE_ACP,
   "x-amz-grant-write-acp"
-);
-typed_header!(
-  AwzObjectOwnership,
-  AWZ_OBJECT_OWNERSHIP,
-  "x-amz-object-ownership",
-  AwzObjectOwnershipEnum
 );
 
 #[derive(Deserialize_enum_str, Serialize_enum_str, Debug)]
@@ -105,21 +98,4 @@ impl AwzContentSha256 {
       AwzContentSha256::UnsignedPayload | AwzContentSha256::StreamingUnsignedPayloadTrailer
     )
   }
-}
-
-#[derive(Deserialize_enum_str, Serialize_enum_str)]
-#[serde(rename_all = "kebab-case")]
-pub enum AwzAclEnum {
-  Private,
-  PublicRead,
-  PublicReadWrite,
-  AuthenticatedRead,
-}
-
-#[derive(Deserialize_enum_str, Serialize_enum_str)]
-#[serde(rename_all = "kebab-case")]
-pub enum AwzObjectOwnershipEnum {
-  BucketOwnerEnforced,
-  BucketOwnerPreferred,
-  ObjectWriter,
 }
