@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
   RequestPartsExt,
   extract::{FromRequest, Request},
@@ -21,11 +23,14 @@ mod multipart;
 mod query;
 mod sig_v4;
 
-/// TODO: body handling, maybe body caching,      DB: credential lookup, region check
+/// TODO: DB: credential lookup, region check
 /// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
 pub struct S3Auth<T: Body = ()> {
   pub identity: Identity,
   pub body: T,
+  #[allow(unused)]
+  /// TODO: currently only used for multipart uploads which are not implemented yet
+  pub additional: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug)]

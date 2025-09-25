@@ -126,6 +126,7 @@ pub async fn header_auth<T: BodyTrait>(req: Request) -> Result<S3Auth<T>> {
       Identity::Anonymous
     },
     body: T::from_writer(writer)?,
+    additional: None,
   })
 }
 

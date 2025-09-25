@@ -20,6 +20,7 @@ async fn create_bucket(
   S3Auth {
     body: Xml(xml),
     identity,
+    ..
   }: S3Auth<Xml<CreateBucketConfiguration>>,
 ) -> Result<HeaderMap> {
   dbg!(&xml);
