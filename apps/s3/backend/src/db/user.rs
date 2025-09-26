@@ -1,4 +1,4 @@
-use entity::{prelude::*, user};
+use entity::user;
 use sea_orm::prelude::*;
 
 pub struct UserTable<'db> {
