@@ -414,12 +414,12 @@ mod test {
 
   #[test]
   fn test_hmac() {
-    let key = b"secret";
+    let input = b"1234";
     let msg = "20130524/us-east-1/s3/aws4_request";
-    let hmac = hmac(key, msg).unwrap();
+    let hmac = hmac(input, msg).unwrap();
     let expected_hmac = vec![
-      248, 108, 129, 17, 143, 106, 239, 170, 128, 255, 181, 172, 205, 60, 212, 99, 49, 211, 110,
-      132, 117, 226, 135, 52, 117, 254, 68, 195, 133, 7, 112, 67,
+      211, 52, 83, 205, 49, 226, 232, 59, 239, 166, 97, 166, 177, 201, 200, 21, 20, 197, 254, 98,
+      46, 43, 116, 163, 5, 37, 202, 211, 123, 67, 93, 184,
     ];
     assert_eq!(hmac, expected_hmac);
   }

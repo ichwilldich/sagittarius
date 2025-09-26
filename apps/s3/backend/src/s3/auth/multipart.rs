@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use axum::extract::{FromRequest, Multipart, Request};
 use base64::prelude::*;
 use chrono::NaiveDateTime;
-use eyre::{Context, OptionExt};
+use eyre::Context;
 use ichwilldich_lib::{bail, error::Result};
 use tracing::instrument;
 
@@ -24,14 +24,20 @@ pub async fn multipart_auth<T: Body>(req: Request) -> Result<S3Auth<T>> {
 
   let data = parse_multipart(multipart, &mut writer).await?;
 
-  let signature = StringToSign::new(data.policy).sign(SECRET, &data.credential)?;
+  let identity = if let Some(auth_info) = data.auth_info {
+    let signature = StringToSign::new(auth_info.policy).sign(SECRET, &auth_info.credential)?;
 
-  if signature != data.signature {
-    bail!(FORBIDDEN, "Signature mismatch");
-  }
+    if signature != auth_info.signature {
+      bail!(FORBIDDEN, "Signature mismatch");
+    }
+
+    Identity::AccessKey(auth_info.credential.access_key.clone())
+  } else {
+    Identity::Anonymous
+  };
 
   Ok(S3Auth {
-    identity: Identity::AccessKey(data.credential.access_key),
+    identity,
     body: T::from_writer(writer)?,
     additional: Some(data.additional),
   })
@@ -39,12 +45,16 @@ pub async fn multipart_auth<T: Body>(req: Request) -> Result<S3Auth<T>> {
 
 // TODO: handling of policy
 struct MultipartData {
+  auth_info: Option<MultipartAuthInfo>,
+  additional: HashMap<String, String>,
+}
+
+struct MultipartAuthInfo {
   policy: String,
-  algorithm: String,
+  _algorithm: String,
   credential: AWS4Credential,
   _date: NaiveDateTime,
   signature: String,
-  additional: HashMap<String, String>,
 }
 
 #[instrument]
@@ -81,24 +91,37 @@ async fn parse_multipart(
     }
   }
 
-  let multipart_data = MultipartData {
-    policy: policy.ok_or_eyre("Missing policy field")?,
-    algorithm: algorithm.ok_or_eyre("Missing algorithm field")?,
-    credential: credential.ok_or_eyre("Missing credential field")?.parse()?,
-    _date: NaiveDateTime::parse_from_str(&date.ok_or_eyre("Missing date field")?, DATE_FORMAT)?,
-    signature: signature.ok_or_eyre("Missing signature field")?,
-    additional,
+  let auth_info = if let Some(algorithm) = algorithm
+    && let Some(credential) = credential
+    && let Some(date) = date
+    && let Some(signature) = signature
+    && let Some(policy) = policy
+  {
+    // check algorithm
+    if algorithm != ALGORITHM {
+      bail!("Only AWS4-HMAC-SHA256 is supported");
+    }
+
+    // check policy is valid base64
+    BASE64_STANDARD
+      .decode(&policy)
+      .context("Invalid policy field")?;
+
+    Some(MultipartAuthInfo {
+      _algorithm: algorithm,
+      credential: credential.parse()?,
+      _date: NaiveDateTime::parse_from_str(&date, DATE_FORMAT)?,
+      signature,
+      policy,
+    })
+  } else {
+    None
   };
 
-  // check if policy is valid base64
-  BASE64_STANDARD
-    .decode(&multipart_data.policy)
-    .context("Invalid policy field")?;
-
-  // check algorithm
-  if multipart_data.algorithm != ALGORITHM {
-    bail!("Only AWS4-HMAC-SHA256 is supported");
-  }
+  let multipart_data = MultipartData {
+    auth_info,
+    additional,
+  };
 
   Ok(multipart_data)
 }
@@ -174,6 +197,35 @@ mod test {
     assert_eq!(auth.identity, Identity::AccessKey("test".to_string()));
     assert_eq!(auth.body, b"Hello, world!".to_vec());
 
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn test_multipart_auth_anonymous() -> Result<()> {
+    let mut multipart: Vec<u8> = Vec::new();
+
+    // file
+    write!(multipart, "--{}\r\n", BOUNDARY).unwrap();
+    write!(
+      multipart,
+      "Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"\r\n"
+    )
+    .unwrap();
+    write!(multipart, "Content-Type: text/plain\r\n\r\n").unwrap();
+    write!(multipart, "Hello, world!\r\n").unwrap();
+    write!(multipart, "--{}--\r\n", BOUNDARY).unwrap();
+
+    let req = Request::builder()
+      .header(
+        CONTENT_TYPE,
+        format!("multipart/form-data; boundary={}", BOUNDARY),
+      )
+      .body(multipart.into())
+      .unwrap();
+
+    let auth: S3Auth<Vec<u8>> = multipart_auth(req).await?;
+    assert_eq!(auth.identity, Identity::Anonymous);
+    assert_eq!(auth.body, b"Hello, world!".to_vec());
     Ok(())
   }
 
