@@ -1,31 +1,30 @@
 use std::{ops::Deref, time::Duration};
 
-use axum::Extension;
 use ichwilldich_lib::FromReqExtension;
 use migration::MigratorTrait;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
-use crate::{macros::DualRouterExt, router_extension};
+mod invalid_jwt;
+mod key;
+mod user;
 
-router_extension!(
-  async fn db(self, config: &crate::config::Config) -> Self {
-    let mut options = ConnectOptions::new(&config.db_url);
-    options
-      .max_connections(config.database_max_connections)
-      .min_connections(config.database_min_connections)
-      .connect_timeout(Duration::from_secs(config.database_connect_timeout))
-      .sqlx_logging(config.database_logging);
+pub async fn init_db(config: &crate::config::Config) -> Connection {
+  let mut options = ConnectOptions::new(&config.db_url);
+  options
+    .max_connections(config.database_max_connections)
+    .min_connections(config.database_min_connections)
+    .connect_timeout(Duration::from_secs(config.database_connect_timeout))
+    .sqlx_logging(config.database_logging);
 
-    let conn = Database::connect(options)
-      .await
-      .expect("Failed to connect to database");
-    migration::Migrator::up(&conn, None)
-      .await
-      .expect("Failed to run database migrations");
+  let conn = Database::connect(options)
+    .await
+    .expect("Failed to connect to database");
+  migration::Migrator::up(&conn, None)
+    .await
+    .expect("Failed to run database migrations");
 
-    self.layer(Extension(Connection(conn)))
-  }
-);
+  Connection(conn)
+}
 
 #[derive(FromReqExtension, Clone)]
 pub struct Connection(DatabaseConnection);
@@ -39,11 +38,15 @@ impl Deref for Connection {
 }
 
 impl Connection {
-  pub fn tables(&self) -> Tables<'_> {
-    Tables { conn: &self.0 }
+  pub fn key(&self) -> key::KeyTable<'_> {
+    key::KeyTable::new(&self.0)
   }
-}
 
-pub struct Tables<'db> {
-  conn: &'db DatabaseConnection,
+  pub fn user(&self) -> user::UserTable<'_> {
+    user::UserTable::new(&self.0)
+  }
+
+  pub fn invalid_jwt(&self) -> invalid_jwt::InvalidJwtTable<'_> {
+    invalid_jwt::InvalidJwtTable::new(&self.0)
+  }
 }

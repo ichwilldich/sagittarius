@@ -31,6 +31,12 @@ pub struct Config {
   pub database_connect_timeout: u64,
   #[clap(long, env, default_value = "false")]
   pub database_logging: bool,
+
+  // jwt
+  #[clap(long, env, default_value = "my_iss")]
+  pub jwt_iss: String,
+  #[clap(long, env, default_value = "604800")]
+  pub jwt_exp: i64,
 }
 
 #[cfg(test)]

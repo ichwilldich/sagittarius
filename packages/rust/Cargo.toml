@@ -22,6 +22,7 @@ hmac = { workspace = true }
 chrono = { workspace = true }
 eyre = { workspace = true }
 color-eyre = { workspace = true }
+jsonwebtoken = { workspace = true }
 tracing-error = "0.2.1"
 
 [lib]
