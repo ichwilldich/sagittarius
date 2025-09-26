@@ -4,7 +4,7 @@ ARG APP_PATH=apps/${APP}/backend
 ARG LIB_PATH=packages/rust
 ARG DERIVE_LIB_PATH=packages/rust-derive
 
-FROM build AS planner
+FROM ghcr.io/profiidev/images/rust-musl-builder:main AS planner
 
 ARG APP_PATH
 ARG LIB_PATH
@@ -19,7 +19,7 @@ COPY ./Cargo.lock ./Cargo.toml ./
 
 RUN cargo chef prepare --recipe-path recipe.json --bin positron-backend
 
-FROM build AS builder
+FROM ghcr.io/profiidev/images/rust-musl-builder:main AS builder
 
 ARG TARGET
 ARG APP_PATH
