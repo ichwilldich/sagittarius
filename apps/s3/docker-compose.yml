@@ -7,7 +7,7 @@ services:
     tty: true
     networks:
       - nginx
-    # command: sleep infinity
+    # command: npm install
     command: npm run dev -- --host
     working_dir: /app/apps/s3/frontend
 
