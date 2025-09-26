@@ -1,6 +1,12 @@
 [workspace]
 resolver = "3"
-members = ["apps/s3/backend", "packages/rust", "packages/rust-derive"]
+members = [
+  "apps/s3/backend",
+  "apps/s3/backend/migration",
+  "apps/s3/backend/entity",
+  "packages/rust",
+  "packages/rust-derive",
+]
 
 [workspace.dependencies]
 ichwilldich-lib = { path = "packages/rust" }
@@ -31,3 +37,7 @@ base64 = "0.22.1"
 chrono = { version = "0.4.42", features = ["serde"] }
 eyre = "0.6.12"
 color-eyre = "0.6.5"
+sea-orm = { version = "1.1.16", features = [
+  "sqlx-postgres",
+  "runtime-tokio-rustls",
+] }

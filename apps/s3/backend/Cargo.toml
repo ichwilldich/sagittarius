@@ -20,6 +20,9 @@ base64 = { workspace = true }
 chrono = { workspace = true }
 eyre = { workspace = true }
 uuid = { workspace = true }
+sea-orm = { workspace = true }
+entity = { path = "entity" }
+migration = { path = "migration" }
 sha2 = "0.10.9"
 hex = "0.4.3"
 serde-enum-str = "0.4.0"

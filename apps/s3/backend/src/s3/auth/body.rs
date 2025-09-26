@@ -8,10 +8,11 @@ use tokio::{
 };
 use uuid::Uuid;
 
+#[async_trait::async_trait]
 pub trait Body: Sized {
   type Writer: BodyWriter + Send;
 
-  fn from_writer(writer: Self::Writer) -> Result<Self>;
+  async fn from_writer(writer: Self::Writer) -> Result<Self>;
 }
 
 /// A temporary file that will be deleted when dropped
@@ -30,45 +31,52 @@ impl Drop for TmpFile {
   }
 }
 
+#[async_trait::async_trait]
 impl Body for () {
   type Writer = ();
 
-  fn from_writer(_: Self::Writer) -> Result<Self> {
+  async fn from_writer(_: Self::Writer) -> Result<Self> {
     Ok(())
   }
 }
 
+#[async_trait::async_trait]
 impl Body for TmpFile {
   type Writer = FileWriter;
 
-  fn from_writer(writer: Self::Writer) -> Result<Self> {
+  async fn from_writer(writer: Self::Writer) -> Result<Self> {
+    writer.0.sync_all().await?;
+    drop(writer.0);
     Ok(TmpFile(writer.1))
   }
 }
 
+#[async_trait::async_trait]
 impl Body for Vec<u8> {
   type Writer = Vec<u8>;
 
-  fn from_writer(writer: Self::Writer) -> Result<Self> {
+  async fn from_writer(writer: Self::Writer) -> Result<Self> {
     Ok(writer)
   }
 }
 
+#[async_trait::async_trait]
 impl<T: Body> Body for Option<T> {
   type Writer = T::Writer;
 
-  fn from_writer(writer: Self::Writer) -> Result<Self> {
-    Ok(T::from_writer(writer).ok())
+  async fn from_writer(writer: Self::Writer) -> Result<Self> {
+    Ok(T::from_writer(writer).await.ok())
   }
 }
 
+#[async_trait::async_trait]
 impl<T> Body for Xml<T>
 where
   T: for<'de> Deserialize<'de> + Send + Sync + 'static,
 {
   type Writer = Vec<u8>;
 
-  fn from_writer(writer: Self::Writer) -> Result<Self> {
+  async fn from_writer(writer: Self::Writer) -> Result<Self> {
     Ok(Xml::from_slice(&writer)?)
   }
 }
@@ -131,7 +139,7 @@ mod test {
     let mut writer = <TmpFile as Body>::Writer::new().await.unwrap();
     writer.write(b"Hello, ").await.unwrap();
     writer.write(b"world!").await.unwrap();
-    let body = <TmpFile as Body>::from_writer(writer).unwrap();
+    let body = <TmpFile as Body>::from_writer(writer).await.unwrap();
     let content = tokio::fs::read_to_string(&body.0).await.unwrap();
     assert_eq!(content, "Hello, world!");
 
@@ -153,7 +161,7 @@ mod test {
     <Vec<u8> as BodyWriter>::write(&mut writer, b"world!")
       .await
       .unwrap();
-    let body = <Vec<u8> as Body>::from_writer(writer).unwrap();
+    let body = <Vec<u8> as Body>::from_writer(writer).await.unwrap();
     assert_eq!(body, b"Hello, world!");
   }
 }

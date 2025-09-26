@@ -7,6 +7,7 @@
     cargo-watch
     cargo-nextest
     git
+    sea-orm-cli
   ];
 
   languages = {

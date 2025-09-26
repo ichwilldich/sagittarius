@@ -43,7 +43,7 @@ pub async fn query_auth<T: Body>(req: Request, query: &[(String, String)]) -> Re
 
   Ok(S3Auth {
     identity: Identity::AccessKey(data.auth.credential.access_key),
-    body: T::from_writer(writer)?,
+    body: T::from_writer(writer).await?,
     additional: None,
   })
 }
