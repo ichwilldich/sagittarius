@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use axum::{
   RequestPartsExt,
-  body::{Body, BodyDataStream, Bytes},
+  body::{Body, BodyDataStream},
   extract::Request,
 };
 use axum_extra::{
@@ -144,7 +144,7 @@ async fn process_chunks(
   datetime: &DateTime<Utc>,
   content_hash: &AwzContentSha256,
   writer: &mut impl BodyWriter,
-) -> Result<Bytes> {
+) -> Result<()> {
   let TypedHeader(encoding) = parts.extract::<TypedHeader<ContentEncoding>>().await?;
   if !encoding.contains("aws-chunked") {
     bail!("Content-Encoding must be 'aws-chunked'");
@@ -156,16 +156,27 @@ async fn process_chunks(
 
   let mut buffer = Vec::new();
   let mut current_meta: Option<ChunkMeta> = None;
-  let mut data = Vec::new();
+  let mut read_bytes = 0;
   let mut last_signature = initial_signature.to_string();
+  let mut still_processing = false;
+  let mut last_chunk = false;
   let trailer = content_hash.is_trailer();
 
-  while let Some(chunk) = body.next().await {
-    let Ok(chunk) = chunk else {
-      bail!("Invalid chunk");
-    };
-
-    buffer.extend_from_slice(&chunk);
+  loop {
+    if buffer.is_empty() || !still_processing {
+      match body.next().await {
+        Some(Ok(chunk)) => buffer.extend_from_slice(&chunk),
+        Some(Err(e)) => bail!(INTERNAL_SERVER_ERROR, "Error reading body: {}", e),
+        None => {
+          last_chunk = true;
+          // also set still_processing to false to avoid infinite loop
+          // when the buffer is empty and it is not set by the else
+          still_processing = false;
+        }
+      }
+    } else {
+      still_processing = false;
+    }
 
     if let Some(meta) = &current_meta {
       // +2 for trailing \r\n
@@ -187,18 +198,21 @@ async fn process_chunks(
 
         // remove trailing \r\n
         buffer.drain(..2);
-        data.extend_from_slice(&d);
+        writer.write(&d).await?;
+        read_bytes += d.len();
 
         // don't break if there is a trailer chunk and exit automatically when the stream ends
         if meta.length == 0 && trailer {
           break;
         }
+
         current_meta = None;
+        still_processing = true;
       }
     }
 
     if let Some(i) = memchr(b'\n', &buffer) {
-      let line = String::from_utf8_lossy(&buffer[..i]);
+      let line = String::from_utf8_lossy(&buffer[..i - 1]); // -1 to remove \r
       let mut parts = line.split(';');
       let length = parts
         .next()
@@ -206,18 +220,22 @@ async fn process_chunks(
         .ok_or_eyre("Invalid chunk length")?;
 
       let signature = parts
-        .find_map(|s| s.strip_prefix("chunk-signature="))
+        .next()
+        .and_then(|s| s.strip_prefix("chunk-signature="))
         .map(|s| s.to_string())
         .ok_or_eyre("Missing chunk signature")?;
 
       current_meta = Some(ChunkMeta { length, signature });
       buffer.drain(..=i);
-    } else {
-      continue;
+      still_processing = true;
+    }
+
+    if last_chunk && current_meta.is_none() && !still_processing {
+      break;
     }
   }
 
-  if data.len() != length as usize {
+  if read_bytes != length as usize {
     bail!("Decoded content length mismatch");
   }
 
@@ -257,9 +275,10 @@ async fn process_chunks(
     }
   }
 
-  Ok(Bytes::from(data))
+  Ok(())
 }
 
+#[derive(Debug)]
 struct ChunkMeta {
   length: usize,
   signature: String,
@@ -278,4 +297,121 @@ pub fn check_headers(parts: &Parts, auth: &AWS4) -> Result<()> {
     }
   }
   Ok(())
+}
+
+#[cfg(test)]
+mod test {
+  use crate::s3::auth::credential::AWS4Credential;
+
+  use super::*;
+
+  fn request(auth: bool) -> Request {
+    let mut builder = Request::builder().uri("http://localhost/");
+
+    if auth {
+      builder = builder.header("Authorization", "AWS4-HMAC-SHA256 Credential=test/21240426/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=e737cff2fc158b249645312df82c5a72abc11a42e7b8a20a41cbff1f9430b4c1");
+    }
+
+    builder
+      .header("x-amz-content-sha256", "UNSIGNED-PAYLOAD")
+      .header("x-amz-date", "21240426T000000Z")
+      .body(Body::new("Hello, world!".to_string()))
+      .unwrap()
+  }
+
+  #[tokio::test]
+  async fn test_header_auth() {
+    let req = request(true);
+    let auth = header_auth::<Vec<u8>>(req).await.unwrap();
+    assert_eq!(auth.identity, Identity::AccessKey("test".to_string()));
+    assert_eq!(auth.body, b"Hello, world!".to_vec());
+  }
+
+  #[tokio::test]
+  async fn test_header_auth_no_auth() {
+    let req = request(false);
+    let auth = header_auth::<Vec<u8>>(req).await.unwrap();
+    assert_eq!(auth.identity, Identity::Anonymous);
+    assert_eq!(auth.body, b"Hello, world!".to_vec());
+  }
+
+  fn process_chunks_data() -> (Parts, BodyDataStream) {
+    let req = Request::builder()
+      .header("Content-Encoding", "aws-chunked")
+      .header("x-awz-decoded-content-length", "13")
+      .body(Body::new(
+        "b;chunk-signature=eb4da889094a48f5c7d765c9bc36a22561aa0eb233b6ff2daa48b175be876b2d\
+      \r\nHello, worl\r\n\
+      2;chunk-signature=fdd149ed8f89c43e576c91eb79c9af3ca2cfaae017cf44898a826692f18fea49\
+      \r\nd!\r\n\
+      0;chunk-signature=74710388795df5c9cd091e2180cbcb977d424f571117c8242ccfaf86c03dcab8\r\n\r\n"
+          .to_string(),
+      ))
+      .unwrap();
+    let (parts, body) = req.into_parts();
+    (parts, body.into_data_stream())
+  }
+
+  #[tokio::test]
+  async fn test_process_chunks() {
+    let (mut parts, body) = process_chunks_data();
+    let mut writer = <Vec<u8> as BodyWriter>::new().await.unwrap();
+    let date = DateTime::parse_from_rfc3339("2124-04-26T00:00:00Z")
+      .unwrap()
+      .with_timezone(&Utc);
+
+    let result = process_chunks(
+      &mut parts,
+      body,
+      "e737cff2fc158b249645312df82c5a72abc11a42e7b8a20a41cbff1f9430b4c1",
+      &Some(AWS4 {
+        credential: AWS4Credential {
+          access_key: "test".to_string(),
+          date: "21240426".to_string(),
+          region: "us-east-1".to_string(),
+        },
+        signature: "".to_string(),
+        signed_headers: vec![
+          "host".to_string(),
+          "x-amz-content-sha256".to_string(),
+          "x-amz-date".to_string(),
+        ],
+      }),
+      &date,
+      &AwzContentSha256::StreamingAws4HmacSha256Payload,
+      &mut writer,
+    )
+    .await;
+    assert!(result.is_ok());
+    assert_eq!(writer, b"Hello, world!".to_vec());
+  }
+
+  #[test]
+  fn test_check_headers() {
+    let req = Request::builder()
+      .header("Authorization", "AWS4-HMAC-SHA256 Credential=test/21240426/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=e737cff2fc158b249645312df82c5a72abc11a42e7b8a20a41cbff1f9430b4c1")
+      .header("x-amz-content-sha256", "UNSIGNED-PAYLOAD")
+      .header("x-amz-date", "21240426T000000Z")
+      .header("x-amz-meta-custom", "value")
+      .body(Body::new("Hello, world!".to_string()))
+      .unwrap();
+    let (parts, _) = req.into_parts();
+    let result = check_headers(
+      &parts,
+      &AWS4 {
+        credential: AWS4Credential {
+          access_key: "test".to_string(),
+          date: "21240426".to_string(),
+          region: "us-east-1".to_string(),
+        },
+        signature: "".to_string(),
+        signed_headers: vec![
+          "host".to_string(),
+          "x-amz-content-sha256".to_string(),
+          "x-amz-date".to_string(),
+        ],
+      },
+    );
+    assert!(result.is_err());
+  }
 }

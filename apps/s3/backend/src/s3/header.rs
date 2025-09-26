@@ -38,8 +38,8 @@ typed_header!(
 
 typed_header!(
   AwzDecodedContentLength,
-  AWZ_CONTENT_LENGTH,
-  "x-awz-content-length",
+  AWZ_DECODED_CONTENT_LENGTH,
+  "x-awz-decoded-content-length",
   u64
 );
 
