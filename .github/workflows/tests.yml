@@ -1,0 +1,53 @@
+name: Tests
+on:
+  pull_request:
+
+jobs:
+  rust-tests:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo and rust files
+        id: rust_cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          shared-key: "rust-tests"
+
+      - uses: taiki-e/install-action@nextest
+      - name: "Build and test"
+        run: cargo nextest run --workspace --all-features
+
+      - name: Upload Test Result File
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-rust
+          path: ${{ github.workspace }}/target/nextest/default/junit.xml
+          retention-days: 5
+
+  comment_results:
+    permissions:
+      checks: write
+      pull-requests: write
+    name: Comment Results to PR
+    runs-on: ubuntu-latest
+    needs:
+      - rust-tests
+    steps:
+      - name: Download Test Results
+        uses: actions/download-artifact@v5
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: test-results
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            test-results/**/*.xml
