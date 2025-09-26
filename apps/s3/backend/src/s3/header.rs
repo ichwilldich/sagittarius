@@ -109,7 +109,7 @@ mod test {
   use super::*;
 
   #[test]
-  fn awz_date() {
+  fn test_awz_date() {
     let value = HeaderValue::from_static("20230915T123456Z");
     let date = AwzDate::decode(&mut std::iter::once(&value)).unwrap();
     assert_eq!(
@@ -122,7 +122,7 @@ mod test {
   }
 
   #[test]
-  fn awz_content_sha256() {
+  fn test_awz_content_sha256() {
     for (raw, expected) in [
       ("UNSIGNED-PAYLOAD", AwzContentSha256::UnsignedPayload),
       (

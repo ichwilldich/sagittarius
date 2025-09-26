@@ -53,7 +53,7 @@ mod test {
   use clap::Parser;
 
   #[tokio::test]
-  async fn router() {
+  async fn test_router() {
     unsafe {
       std::env::set_var("STORAGE_PATH", "/tmp/s3");
     }

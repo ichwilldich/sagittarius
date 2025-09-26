@@ -33,7 +33,7 @@ pub struct S3Auth<T: Body = ()> {
   pub additional: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Identity {
   AccessKey(String),
   Anonymous,

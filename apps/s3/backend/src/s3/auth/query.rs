@@ -124,3 +124,122 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
 
   Ok(data)
 }
+
+#[cfg(test)]
+mod test {
+  use axum::body::Body;
+
+  use super::*;
+
+  fn query() -> Vec<(String, String)> {
+    vec![
+      (
+        "X-Amz-Algorithm".to_string(),
+        "AWS4-HMAC-SHA256".to_string(),
+      ),
+      (
+        "X-Amz-Credential".to_string(),
+        "AKIAIOSFODNN7EXAMPLE/21231129/us-east-1/s3/aws4_request".to_string(),
+      ),
+      ("X-Amz-Date".to_string(), "21231129T000000Z".to_string()),
+      ("X-Amz-Expires".to_string(), "86400".to_string()),
+      ("X-Amz-SignedHeaders".to_string(), "host".to_string()),
+      (
+        "X-Amz-Signature".to_string(),
+        "d82434f5d71d0f64a8b69f0fcc01c94b553546ee4aef01ad14da02c82b6127a8".to_string(),
+      ),
+    ]
+  }
+
+  fn edit_query(mut query: Vec<(String, String)>, key: &str, value: &str) -> Vec<(String, String)> {
+    for (k, v) in &mut query {
+      if k == key {
+        *v = value.to_string();
+      }
+    }
+    query
+  }
+
+  fn req() -> Request {
+    let query = query();
+    let query: String = query
+      .iter()
+      .map(|(k, v)| format!("{}={}", k, v))
+      .collect::<Vec<_>>()
+      .join("&");
+
+    Request::builder()
+      .uri(format!("http://localhost/test.txt?{}", query))
+      .body(Body::new("123".to_string()))
+      .unwrap()
+  }
+
+  #[tokio::test]
+  async fn test_query_auth() {
+    let req = req();
+    let query = query();
+
+    let auth = query_auth::<Vec<u8>>(req, &query).await.unwrap();
+    assert_eq!(
+      auth.identity,
+      Identity::AccessKey("AKIAIOSFODNN7EXAMPLE".to_string())
+    );
+    assert_eq!(auth.body, b"123".to_vec());
+  }
+
+  #[test]
+  fn test_parse_query() {
+    let query = query();
+
+    let data = parse_query(&query).unwrap();
+    assert_eq!(data.algorithm, "AWS4-HMAC-SHA256");
+    assert_eq!(data.auth.credential.access_key, "AKIAIOSFODNN7EXAMPLE");
+    assert_eq!(data.auth.credential.date, "21231129");
+    assert_eq!(data.auth.credential.region, "us-east-1");
+    assert_eq!(data.auth.signed_headers, vec!["host"]);
+    assert_eq!(
+      data.auth.signature,
+      "d82434f5d71d0f64a8b69f0fcc01c94b553546ee4aef01ad14da02c82b6127a8"
+    );
+  }
+
+  #[test]
+  fn test_parse_query_any_missing() {
+    for key in [
+      "X-Amz-Algorithm",
+      "X-Amz-Credential",
+      "X-Amz-Date",
+      "X-Amz-Expires",
+      "X-Amz-SignedHeaders",
+      "X-Amz-Signature",
+    ] {
+      let mut query = query();
+      query.retain(|(k, _)| k != key);
+      assert!(parse_query(&query).is_err());
+    }
+  }
+
+  #[test]
+  fn test_parse_query_invalid_date() {
+    let query = edit_query(query(), "X-Amz-Date", "invalid-date");
+    assert!(parse_query(&query).is_err());
+  }
+
+  #[test]
+  fn test_parse_query_expired_date() {
+    let query = edit_query(query(), "X-Amz-Date", "20000101T000000Z");
+    assert!(parse_query(&query).is_err());
+  }
+
+  #[test]
+  fn test_parse_query_invalid_algorithm() {
+    let query = edit_query(query(), "X-Amz-Algorithm", "");
+    assert!(parse_query(&query).is_err());
+  }
+
+  #[test]
+  fn test_parse_query_missing_credential() {
+    let query = edit_query(query(), "X-Amz-Credential", "");
+    assert!(parse_query(&query).is_err());
+  }
+}

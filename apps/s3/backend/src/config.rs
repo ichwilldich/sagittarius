@@ -27,12 +27,12 @@ mod test {
   use clap::CommandFactory;
 
   #[test]
-  fn verify_config() {
+  fn test_verify_config() {
     Config::command().debug_assert();
   }
 
   #[test]
-  fn storage_type() {
+  fn test_storage_type() {
     unsafe {
       std::env::set_var("STORAGE_PATH", "/tmp/s3");
       std::env::set_var("STORAGE_TYPE", "no-raid");
@@ -43,7 +43,7 @@ mod test {
   }
 
   #[test]
-  fn storage_path() {
+  fn test_storage_path() {
     unsafe {
       std::env::set_var("STORAGE_PATH", "/tmp/s3");
     }
@@ -53,7 +53,7 @@ mod test {
   }
 
   #[test]
-  fn s3_port() {
+  fn test_s3_port() {
     unsafe {
       std::env::set_var("STORAGE_PATH", "/tmp/s3");
       std::env::set_var("S3_PORT", "9000");

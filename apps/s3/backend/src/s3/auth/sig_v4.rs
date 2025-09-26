@@ -216,13 +216,13 @@ mod test {
   use super::*;
 
   #[test]
-  fn empty_string_sha256() {
+  fn test_empty_string_sha256() {
     let hash = hex::encode(Sha256::digest("".as_bytes()));
     assert_eq!(hash, EMPTY_STRING_SHA256_HASH);
   }
 
   #[test]
-  fn algorithm() {
+  fn test_algorithm() {
     // just so ai doesn't mess with it
     assert_eq!(ALGORITHM, "AWS4-HMAC-SHA256");
     assert_eq!(ALGORITHM_CHUNKED, "AWS4-HMAC-SHA256-PAYLOAD");
@@ -264,7 +264,7 @@ mod test {
   }
 
   #[test]
-  fn cr_unsigned() {
+  fn test_cr_unsigned() {
     let parts = parts();
     let mut auth = aws4();
     let payload = Payload::Unsigned;
@@ -284,7 +284,7 @@ mod test {
   }
 
   #[test]
-  fn cr_single_chunk() {
+  fn test_cr_single_chunk() {
     let parts = parts();
     let mut auth = aws4();
     let payload = Payload::SingleChunk(EMPTY_STRING_SHA256_HASH.to_string());
@@ -304,7 +304,7 @@ mod test {
   }
 
   #[test]
-  fn cr_multiple_chunks() {
+  fn test_cr_multiple_chunks() {
     let parts = parts();
     let mut auth = aws4();
     let payload = Payload::MultipleChunks;
@@ -332,7 +332,7 @@ mod test {
   }
 
   #[test]
-  fn cr_sts() {
+  fn test_cr_sts() {
     let canonical_request = cr();
     let amz_date = DateTime::parse_from_rfc3339("2013-05-24T00:00:00Z")
       .unwrap()
@@ -349,7 +349,7 @@ mod test {
   }
 
   #[test]
-  fn sts_chunked() {
+  fn test_sts_chunked() {
     let amz_date = DateTime::parse_from_rfc3339("2013-05-24T00:00:00Z")
       .unwrap()
       .with_timezone(&Utc);
@@ -370,7 +370,7 @@ mod test {
   }
 
   #[test]
-  fn sts_chunked_trailer() {
+  fn test_sts_chunked_trailer() {
     let amz_date = DateTime::parse_from_rfc3339("2013-05-24T00:00:00Z")
       .unwrap()
       .with_timezone(&Utc);
@@ -404,7 +404,7 @@ mod test {
   }
 
   #[test]
-  fn sign() {
+  fn test_sign() {
     let secret_key = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
     let credential = &aws4().credential;
     let string_to_sign = sts().sign(secret_key, credential);
@@ -413,13 +413,13 @@ mod test {
   }
 
   #[test]
-  fn hmac() {
-    let key = b"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
+  fn test_hmac() {
+    let key = b"secret";
     let msg = "20130524/us-east-1/s3/aws4_request";
-    let hmac = super::hmac(key, msg).unwrap();
+    let hmac = hmac(key, msg).unwrap();
     let expected_hmac = vec![
-      16, 222, 136, 98, 3, 7, 133, 154, 17, 212, 111, 136, 227, 180, 36, 141, 59, 240, 137, 150,
-      27, 24, 204, 16, 123, 95, 4, 28, 218, 126, 221, 188,
+      248, 108, 129, 17, 143, 106, 239, 170, 128, 255, 181, 172, 205, 60, 212, 99, 49, 211, 110,
+      132, 117, 226, 135, 52, 117, 254, 68, 195, 133, 7, 112, 67,
     ];
     assert_eq!(hmac, expected_hmac);
   }
