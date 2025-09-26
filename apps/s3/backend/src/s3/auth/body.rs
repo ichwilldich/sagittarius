@@ -121,3 +121,39 @@ impl BodyWriter for Vec<u8> {
     Ok(())
   }
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[tokio::test]
+  async fn test_tmp_file() {
+    let mut writer = <TmpFile as Body>::Writer::new().await.unwrap();
+    writer.write(b"Hello, ").await.unwrap();
+    writer.write(b"world!").await.unwrap();
+    let body = <TmpFile as Body>::from_writer(writer).unwrap();
+    let content = tokio::fs::read_to_string(&body.0).await.unwrap();
+    assert_eq!(content, "Hello, world!");
+
+    let path = body.0.clone();
+
+    drop(body);
+
+    assert!(!path.exists());
+  }
+
+  #[tokio::test]
+  async fn test_vec_u8() {
+    let mut writer = <<Vec<u8> as Body>::Writer as BodyWriter>::new()
+      .await
+      .unwrap();
+    <Vec<u8> as BodyWriter>::write(&mut writer, b"Hello, ")
+      .await
+      .unwrap();
+    <Vec<u8> as BodyWriter>::write(&mut writer, b"world!")
+      .await
+      .unwrap();
+    let body = <Vec<u8> as Body>::from_writer(writer).unwrap();
+    assert_eq!(body, b"Hello, world!");
+  }
+}
