@@ -110,3 +110,69 @@ impl FromStr for AWS4Credential {
     })
   }
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[test]
+  fn test_aws4() {
+    let auth_str = "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/21231129/us-east-1/s3/aws4_request,SignedHeaders=host;range;x-amz-date,Signature=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    let header_value = HeaderValue::from_str(auth_str).unwrap();
+    let aws4 = AWS4::decode(&header_value).unwrap();
+    assert_eq!(aws4.credential.access_key, "AKIAIOSFODNN7EXAMPLE");
+    assert_eq!(aws4.credential.date, "21231129");
+    assert_eq!(aws4.credential.region, "us-east-1");
+    assert_eq!(
+      aws4.signed_headers,
+      vec![
+        "host".to_string(),
+        "range".to_string(),
+        "x-amz-date".to_string()
+      ]
+    );
+    assert_eq!(
+      aws4.signature,
+      "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    );
+  }
+
+  #[test]
+  fn test_aws4_invalid() {
+    let auth_str = "AWS4-HMAC-SHA256 Cred=AKIAIOSFODNN7EXAMPLE/21231129/us-east-1/s3/aws4_request,SignedHeaders=host;range;x-amz-date,Signature=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    let header_value = HeaderValue::from_str(auth_str).unwrap();
+    let aws4 = AWS4::decode(&header_value);
+    assert!(aws4.is_none());
+  }
+
+  #[test]
+  fn test_aws4_missing_host() {
+    let auth_str = "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/21231129/us-east-1/s3/aws4_request,SignedHeaders=range;x-amz-date,Signature=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    let header_value = HeaderValue::from_str(auth_str).unwrap();
+    let aws4 = AWS4::decode(&header_value);
+    assert!(aws4.is_none());
+  }
+
+  #[test]
+  fn test_aws4_credential_from_str() {
+    let cred_str = "AKIAIOSFODNN7EXAMPLE/21231129/us-east-1/s3/aws4_request";
+    let cred = cred_str.parse::<AWS4Credential>().unwrap();
+    assert_eq!(cred.access_key, "AKIAIOSFODNN7EXAMPLE");
+    assert_eq!(cred.date, "21231129");
+    assert_eq!(cred.region, "us-east-1");
+  }
+
+  #[test]
+  fn test_aws4_credential_expired_date() {
+    let cred_str = "AKIAIOSFODNN7EXAMPLE/20231129/us-east-1/s3/aws4_request";
+    let err = cred_str.parse::<AWS4Credential>();
+    assert!(err.is_err());
+  }
+
+  #[test]
+  fn test_aws4_credential_invalid_format() {
+    let cred_str = "AKIAIOSFODNN7EXAMPLE/20231129/us-east-1/s3";
+    let err = cred_str.parse::<AWS4Credential>();
+    assert!(err.is_err());
+  }
+}
