@@ -41,4 +41,10 @@ impl<'db> UserTable<'db> {
 
     Ok(())
   }
+
+  pub async fn list_users(&self) -> Result<Vec<user::Model>, sea_orm::DbErr> {
+    let res = entity::user::Entity::find().all(self.db).await?;
+
+    Ok(res)
+  }
 }
