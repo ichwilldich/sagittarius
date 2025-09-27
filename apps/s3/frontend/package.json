@@ -15,7 +15,7 @@
     "@sveltejs/adapter-node": "5.3.2",
     "@sveltejs/kit": "2.42.2",
     "@sveltejs/vite-plugin-svelte": "6.2.0",
-    "positron-components": "1.6.0",
+    "positron-components": "1.7.0",
     "svelte": "5.39.2",
     "svelte-check": "4.3.1",
     "typescript": "5.9.2",
