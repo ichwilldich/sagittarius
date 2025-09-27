@@ -17,18 +17,18 @@ pub fn from_req(input: TokenStream) -> TokenStream {
   let (_, type_generics, where_clause) = input.generics.split_for_impl();
 
   quote! {
-    impl #impl_generics axum::extract::FromRequestParts<FromRequestGeneric> for #name #type_generics #where_clause {
+    impl #impl_generics ichwilldich_lib::axum::extract::FromRequestParts<FromRequestGeneric> for #name #type_generics #where_clause {
       type Rejection = std::convert::Infallible;
 
       async fn from_request_parts(
-        parts: &mut http::request::Parts,
+        parts: &mut ichwilldich_lib::http::request::Parts,
         _state: &FromRequestGeneric,
-      ) -> Result<Self, Self::Rejection> {
-        use axum::RequestPartsExt;
+      ) -> std::result::Result<Self, Self::Rejection> {
+        use ichwilldich_lib::axum::RequestPartsExt;
 
         Ok(
           parts
-            .extract::<axum::Extension<Self>>()
+            .extract::<ichwilldich_lib::axum::Extension<Self>>()
             .await
             .expect(
               format!(

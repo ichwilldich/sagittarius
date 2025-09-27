@@ -14,6 +14,8 @@ jobs:
         with:
           token: ${{ secrets.PERSONAL_TOKEN }}
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt,clippy
 
       - name: Cache cargo and rust files
         id: rust_cache
