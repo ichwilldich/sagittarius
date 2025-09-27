@@ -8,7 +8,10 @@ use tracing::info;
 
 use crate::{config::Config, macros::DualRouterExt};
 
+mod auth;
 mod config;
+mod db;
+mod example;
 mod macros;
 mod s3;
 
@@ -33,7 +36,10 @@ async fn main() {
 }
 
 async fn router(config: &Config) -> Router {
-  Router::new().add_base_layers(&config.base).await
+  auth::router()
+    .merge(example::router())
+    .add_base_layers(&config.base)
+    .await
 }
 
 async fn s3_router(config: &Config) -> Router {
@@ -42,9 +48,17 @@ async fn s3_router(config: &Config) -> Router {
 
 router_extension!(
   async fn state(self, config: &Config) -> Self {
+    use auth::auth;
     use s3::s3;
 
-    self.s3(config).await
+    let db = db::init_db(config).await;
+
+    self
+      .s3(config)
+      .await
+      .auth(config, &db)
+      .await
+      .layer(Extension(db))
   }
 );
 
@@ -56,6 +70,7 @@ mod test {
   async fn test_router() {
     unsafe {
       std::env::set_var("STORAGE_PATH", "/tmp/s3");
+      std::env::set_var("DB_URL", "postgresql://test:test@localhost:5432/test");
     }
     // test if there are any handler setup error that are not caught at compile time
     let _ = super::router(&super::Config::parse_from([""])).await;

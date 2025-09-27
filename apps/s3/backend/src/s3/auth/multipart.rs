@@ -38,7 +38,7 @@ pub async fn multipart_auth<T: Body>(req: Request) -> Result<S3Auth<T>> {
 
   Ok(S3Auth {
     identity,
-    body: T::from_writer(writer)?,
+    body: T::from_writer(writer).await?,
     additional: Some(data.additional),
   })
 }

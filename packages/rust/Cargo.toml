@@ -22,6 +22,11 @@ hmac = { workspace = true }
 chrono = { workspace = true }
 eyre = { workspace = true }
 color-eyre = { workspace = true }
+jsonwebtoken = { workspace = true }
+sea-orm = { workspace = true }
+base64 = { workspace = true }
+rsa = { workspace = true }
+password-hash = { workspace = true }
 tracing-error = "0.2.1"
 
 [lib]
