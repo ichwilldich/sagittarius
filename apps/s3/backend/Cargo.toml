@@ -20,6 +20,13 @@ base64 = { workspace = true }
 chrono = { workspace = true }
 eyre = { workspace = true }
 uuid = { workspace = true }
+sea-orm = { workspace = true }
+jsonwebtoken = { workspace = true }
+rsa = { workspace = true }
+password-hash = { workspace = true }
+argon2 = { version = "0.5.3", features = ["std"] }
+entity = { path = "entity" }
+migration = { path = "migration" }
 sha2 = "0.10.9"
 hex = "0.4.3"
 serde-enum-str = "0.4.0"
@@ -27,6 +34,7 @@ mime = "0.3.17"
 serde_urlencoded = "0.7.1"
 futures = "0.3.31"
 memchr = "2.7.5"
+time = "0.3.44"
 
 [[bin]]
 name = "backend"

@@ -10,3 +10,5 @@ devenv.local.nix
 .direnv
 
 *.tsbuildinfo
+
+/apps/s3/postgres/
