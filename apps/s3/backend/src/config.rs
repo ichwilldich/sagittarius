@@ -37,6 +37,10 @@ pub struct Config {
   pub jwt_iss: String,
   #[clap(long, env, default_value = "604800")]
   pub jwt_exp: i64,
+
+  // auth
+  #[clap(long, env, default_value = "_my_pepper____123")]
+  pub auth_pepper: String,
 }
 
 #[cfg(test)]
@@ -136,5 +140,27 @@ mod test {
     }
     let cfg = Config::parse_from([""]);
     assert!(!cfg.database_logging);
+  }
+
+  #[test]
+  fn test_jwt_iss() {
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+      std::env::set_var("DB_URL", "postgresql://test:test@localhost:5432/test");
+      std::env::set_var("JWT_ISS", "my_iss");
+    }
+    let cfg = Config::parse_from([""]);
+    assert_eq!(cfg.jwt_iss, "my_iss");
+  }
+
+  #[test]
+  fn test_jwt_exp() {
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+      std::env::set_var("DB_URL", "postgresql://test:test@localhost:5432/test");
+      std::env::set_var("JWT_EXP", "604800");
+    }
+    let cfg = Config::parse_from([""]);
+    assert_eq!(cfg.jwt_exp, 604800);
   }
 }

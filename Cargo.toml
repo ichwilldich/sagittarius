@@ -42,3 +42,5 @@ sea-orm = { version = "1.1.16", features = [
   "runtime-tokio-rustls",
 ] }
 jsonwebtoken = "9.3.1"
+rsa = "0.9.8"
+password-hash = "0.5.0"

@@ -17,6 +17,7 @@ pub const COOKIE_NAME: &str = "auth_token";
 
 pub struct JwtAuth {
   pub user_id: Uuid,
+  pub exp: i64,
 }
 
 impl<S: Sync> FromRequestParts<S> for JwtAuth {
@@ -46,11 +47,14 @@ impl<S: Sync> FromRequestParts<S> for JwtAuth {
       bail!(UNAUTHORIZED, "token is invalidated");
     }
 
-    let Ok(user_id) = state.validate_token(&token) else {
+    let Ok(claims) = state.validate_token(&token) else {
       bail!(UNAUTHORIZED, "invalid token");
     };
 
-    Ok(JwtAuth { user_id })
+    Ok(JwtAuth {
+      user_id: claims.sub,
+      exp: claims.exp,
+    })
   }
 }
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::{Duration, Utc};
 use eyre::ContextCompat;
@@ -10,6 +12,7 @@ use rsa::{
   rand_core::OsRng,
 };
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{auth::jwt_auth::COOKIE_NAME, config::Config, db::Connection};
@@ -61,10 +64,10 @@ impl JwtState {
       .build()
   }
 
-  pub fn validate_token(&self, token: &str) -> Result<Uuid> {
+  pub fn validate_token(&self, token: &str) -> Result<JwtClaims> {
     let token_data = decode::<JwtClaims>(token, &self.decoding_key, &self.validation)?;
 
-    Ok(token_data.claims.sub)
+    Ok(token_data.claims)
   }
 
   pub async fn init(config: &Config, db: &Connection) -> Self {
@@ -114,4 +117,9 @@ impl JwtState {
       iss: config.jwt_iss.clone(),
     }
   }
+}
+
+#[derive(FromReqExtension, Clone, Default)]
+pub struct JwtInvalidState {
+  pub count: Arc<Mutex<i32>>,
 }
