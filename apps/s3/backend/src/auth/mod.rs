@@ -10,7 +10,7 @@ use crate::{
   router_extension,
 };
 
-mod jwt_auth;
+pub mod jwt_auth;
 mod jwt_state;
 mod login;
 mod logout;

@@ -36,12 +36,6 @@ impl<'db> UserTable<'db> {
     Ok(())
   }
 
-  pub async fn delete_user(&self, id: Uuid) -> Result<(), sea_orm::DbErr> {
-    entity::user::Entity::delete_by_id(id).exec(self.db).await?;
-
-    Ok(())
-  }
-
   pub async fn list_users(&self) -> Result<Vec<user::Model>, sea_orm::DbErr> {
     let res = entity::user::Entity::find().all(self.db).await?;
 

@@ -94,7 +94,7 @@ impl_from_error!(chrono::ParseError, StatusCode::BAD_REQUEST);
 impl_from_error!(ParseIntError, StatusCode::BAD_REQUEST);
 impl_from_error!(serde_xml_rs::Error, StatusCode::BAD_REQUEST);
 impl_from_error!(jsonwebtoken::errors::Error, StatusCode::BAD_REQUEST);
-impl_from_error!(sea_orm::DbErr, StatusCode::BAD_REQUEST);
+impl_from_error!(sea_orm::DbErr, StatusCode::INTERNAL_SERVER_ERROR);
 impl_from_error!(base64::DecodeError, StatusCode::BAD_REQUEST);
 impl_from_error!(rsa::Error, StatusCode::BAD_REQUEST);
 impl_from_error!(password_hash::Error, StatusCode::BAD_REQUEST);

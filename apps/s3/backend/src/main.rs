@@ -11,6 +11,7 @@ use crate::{config::Config, macros::DualRouterExt};
 mod auth;
 mod config;
 mod db;
+mod example;
 mod macros;
 mod s3;
 
@@ -35,7 +36,10 @@ async fn main() {
 }
 
 async fn router(config: &Config) -> Router {
-  auth::router().add_base_layers(&config.base).await
+  auth::router()
+    .merge(example::router())
+    .add_base_layers(&config.base)
+    .await
 }
 
 async fn s3_router(config: &Config) -> Router {
