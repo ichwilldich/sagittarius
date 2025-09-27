@@ -1,23 +1,32 @@
 <script lang="ts">
-  import { Card } from "positron-components";
-  import { Label } from "positron-components";
-  import { Input } from "positron-components";
-  import { Button } from "positron-components";
-  import { cn } from "positron-components";
-  import type { HTMLAttributes } from "svelte/elements";
-  let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> = $props();
+  import { Card } from 'positron-components';
+  import { Label } from 'positron-components';
+  import { Input } from 'positron-components';
+  import { Button } from 'positron-components';
+  import { cn } from 'positron-components';
+  import type { HTMLAttributes } from 'svelte/elements';
+  let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> =
+    $props();
   const id = $props.id();
-  import { Database } from "@lucide/svelte";
+  import { Database } from '@lucide/svelte';
 </script>
 
-<div class={cn("flex flex-col gap-6", className)} {...restProps}>
+<div class={cn('flex flex-col gap-6', className)} {...restProps}>
   <Card.Root class="overflow-hidden p-0">
     <!-- Image/Brand Seite zuerst, Formular danach (Seiten vertauscht) -->
     <Card.Content class="grid p-0 md:grid-cols-2">
-      <div class="bg-muted relative hidden md:flex items-center justify-center p-8">
+      <div
+        class="bg-muted relative hidden items-center justify-center p-8 md:flex"
+      >
         <div class="flex flex-col items-center gap-3 text-center">
-          <Database class="h-40 w-40 text-violet-500 dark:text-violet-400" aria-hidden="true" />
-          <span class="text-lg font-semibold text-violet-600 dark:text-violet-300">ichwilldich</span>
+          <Database
+            class="h-40 w-40 text-violet-500 dark:text-violet-400"
+            aria-hidden="true"
+          />
+          <span
+            class="text-lg font-semibold text-violet-600 dark:text-violet-300"
+            >ichwilldich</span
+          >
         </div>
       </div>
 
@@ -40,14 +49,16 @@
               maxlength="6"
               placeholder="123456"
               required
-              class="tracking-widest text-center text-lg font-medium"
+              class="text-center text-lg font-medium tracking-widest"
             />
           </div>
 
           <Button type="submit" class="w-full">Verify</Button>
 
           <div class="text-center text-sm">
-            Lost access? <a href="##" class="underline underline-offset-4">Use backup codes</a>
+            Lost access? <a href="##" class="underline underline-offset-4"
+              >Use backup codes</a
+            >
           </div>
         </div>
       </form>
@@ -55,7 +66,7 @@
   </Card.Root>
 
   <div
-    class="text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs"
+    class="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4"
   >
     By verifying, you confirm your identity.
   </div>

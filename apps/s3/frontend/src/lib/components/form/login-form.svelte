@@ -1,15 +1,17 @@
 <script lang="ts">
-  import { Card } from "positron-components";
-  import { Label } from "positron-components";
-  import { Input } from "positron-components";
-  import { Button } from "positron-components";
-  import { cn } from "positron-components";
-  import type { HTMLAttributes } from "svelte/elements";
-  let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> = $props();
+  import { Card } from 'positron-components';
+  import { Label } from 'positron-components';
+  import { Input } from 'positron-components';
+  import { Button } from 'positron-components';
+  import { cn } from 'positron-components';
+  import type { HTMLAttributes } from 'svelte/elements';
+  let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> =
+    $props();
   const id = $props.id();
-  import { CloudCheck, KeyRound, Database } from "@lucide/svelte";
+  import { CloudCheck, KeyRound, Database } from '@lucide/svelte';
 </script>
-<div class={cn("flex flex-col gap-6", className)} {...restProps}>
+
+<div class={cn('flex flex-col gap-6', className)} {...restProps}>
   <Card.Root class="overflow-hidden p-0">
     <Card.Content class="grid p-0 md:grid-cols-2">
       <form class="p-6 md:p-8">
@@ -22,12 +24,20 @@
           </div>
           <div class="grid gap-3">
             <Label for="email-{id}">Email</Label>
-            <Input id="email-{id}" type="email" placeholder="m@example.com" required />
+            <Input
+              id="email-{id}"
+              type="email"
+              placeholder="m@example.com"
+              required
+            />
           </div>
           <div class="grid gap-3">
             <div class="flex items-center">
               <Label for="password">Password</Label>
-              <a href="##" class="ml-auto text-sm underline-offset-2 hover:underline">
+              <a
+                href="##"
+                class="ml-auto text-sm underline-offset-2 hover:underline"
+              >
                 Forgot your password?
               </a>
             </div>
@@ -45,8 +55,10 @@
             <Button
               variant="outline"
               type="button"
-              class="w-full flex items-center justify-center gap-2 cursor-pointer transition-colors duration-150 ease-in-out hover:bg-accent hover:text-accent-foreground hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
-              onclick={() => {/* TODO: Passkey flow */}}
+              class="hover:bg-accent hover:text-accent-foreground hover:border-primary focus:ring-ring flex w-full cursor-pointer items-center justify-center gap-2 transition-colors duration-150 ease-in-out focus:ring-2 focus:outline-none"
+              onclick={() => {
+                /* TODO: Passkey flow */
+              }}
               aria-label="Sign in with Passkey"
               title="Sign in with Passkey"
             >
@@ -56,21 +68,31 @@
             <Button
               variant="outline"
               type="button"
-              class="w-full flex items-center justify-center gap-2 cursor-pointer transition-colors duration-150 ease-in-out hover:bg-accent hover:text-accent-foreground hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
-              onclick={() => {/* TODO: Azure SSO */}}
+              class="hover:bg-accent hover:text-accent-foreground hover:border-primary focus:ring-ring flex w-full cursor-pointer items-center justify-center gap-2 transition-colors duration-150 ease-in-out focus:ring-2 focus:outline-none"
+              onclick={() => {
+                /* TODO: Azure SSO */
+              }}
               aria-label="Sign in with Azure SSO"
               title="Sign in with Azure SSO"
             >
               <CloudCheck class="h-4 w-4" />
               <span class="text-sm">Azure</span>
             </Button>
-            </div>
+          </div>
         </div>
       </form>
-      <div class="bg-muted relative hidden md:flex items-center justify-center p-8">
+      <div
+        class="bg-muted relative hidden items-center justify-center p-8 md:flex"
+      >
         <div class="flex flex-col items-center gap-3 text-center">
-          <Database class="h-40 w-40 text-violet-500 dark:text-violet-400" aria-hidden="true" />
-          <span class="text-lg font-semibold text-violet-600 dark:text-violet-300">ichwilldich</span>
+          <Database
+            class="h-40 w-40 text-violet-500 dark:text-violet-400"
+            aria-hidden="true"
+          />
+          <span
+            class="text-lg font-semibold text-violet-600 dark:text-violet-300"
+            >ichwilldich</span
+          >
         </div>
       </div>
     </Card.Content>

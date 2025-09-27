@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { Avatar } from "positron-components/components/ui";
-  import { DropdownMenu } from "positron-components/components/ui";
-  import { Sidebar } from "positron-components/components/ui";
-  import BadgeCheckIcon from "@lucide/svelte/icons/badge-check";
-  import BellIcon from "@lucide/svelte/icons/bell";
-  import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
-  import CreditCardIcon from "@lucide/svelte/icons/credit-card";
-  import LogOutIcon from "@lucide/svelte/icons/log-out";
-  import SparklesIcon from "@lucide/svelte/icons/sparkles";
-  let { user }: { user: { name: string; email: string; avatar: string } } = $props();
+  import { Avatar } from 'positron-components/components/ui';
+  import { DropdownMenu } from 'positron-components/components/ui';
+  import { Sidebar } from 'positron-components/components/ui';
+  import BadgeCheckIcon from '@lucide/svelte/icons/badge-check';
+  import BellIcon from '@lucide/svelte/icons/bell';
+  import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
+  import CreditCardIcon from '@lucide/svelte/icons/credit-card';
+  import LogOutIcon from '@lucide/svelte/icons/log-out';
+  import SparklesIcon from '@lucide/svelte/icons/sparkles';
+  let { user }: { user: { name: string; email: string; avatar: string } } =
+    $props();
   let sidebar = Sidebar.useSidebar();
 </script>
+
 <Sidebar.Menu>
   <Sidebar.MenuItem>
     <DropdownMenu.Root>
@@ -35,7 +37,7 @@
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
-        side={sidebar.isMobile ? "bottom" : "right"}
+        side={sidebar.isMobile ? 'bottom' : 'right'}
         align="end"
         sideOffset={4}
       >
