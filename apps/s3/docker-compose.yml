@@ -32,8 +32,9 @@ services:
   postgres:
     image: postgres:latest
     restart: unless-stopped
+    # Use a named docker volume instead of a host bind mount
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=test
       - POSTGRES_USER=test
@@ -66,3 +67,6 @@ services:
 
 networks:
   nginx:
+
+volumes:
+  postgres:

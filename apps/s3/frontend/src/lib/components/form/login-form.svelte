@@ -5,16 +5,99 @@
   import { Button } from 'positron-components';
   import { cn } from 'positron-components';
   import type { HTMLAttributes } from 'svelte/elements';
-  let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> =
-    $props();
-  const id = $props.id();
   import { CloudCheck, KeyRound, Database } from '@lucide/svelte';
+  import { createEventDispatcher } from 'svelte';
+  import { goto } from '$app/navigation';
+
+  // Svelte 5: $props() nur einmal
+  const props = $props() as HTMLAttributes<HTMLDivElement> & { baseUrl?: string; id?: string };
+  let { class: className, id, baseUrl: baseUrlProp, ...restProps } = props;
+
+  // Base-URL aus Prop, Env oder Fallback
+  const baseUrl: string =
+    (baseUrlProp as string | undefined) ??
+    (import.meta.env.VITE_API_URL as string) ??
+    '/backend';
+
+  // Login-Route
+  const endpoint = `${baseUrl}/auth`;
+
+  const dispatch = createEventDispatcher();
+
+  let email = $state('');
+  let password = $state('');
+  let loading = $state(false);
+  let error: string | null = $state(null);
+
+  async function submitForm(e: Event) {
+    e.preventDefault();
+    error = null;
+    loading = true;
+  
+    try {
+      const payload = { email, password };
+      console.log('Sending login data:', payload); // Debug-Output
+  
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+  
+      console.log('Response status:', res.status); // Debug-Output
+  
+      if (res.status === 401) {
+        error = 'Ungültige Zugangsdaten';
+        dispatch('error', { message: error });
+        return;
+      }
+  
+      if (res.status === 422) {
+        const json = await res.json().catch(() => null);
+        error = json?.message ?? 'Ungültige Eingabedaten';
+        console.log('422 Error details:', json); // Debug-Output
+        dispatch('error', { message: error });
+        return;
+      }
+  
+      if (res.status === 204) {
+        dispatch('success', { ok: true });
+        goto('/');
+        return;
+      }
+  
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        error = json?.message ?? res.statusText;
+        console.log('Error response:', json); // Debug-Output
+        dispatch('error', { message: error });
+        return;
+      }
+  
+      const data = await res.json().catch(() => ({}));
+      console.log('Login successful:', data);
+      if (data?.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+  
+      dispatch('success', data);
+      goto('/');
+    } catch (err) {
+      console.error('Login error:', err); // Debug-Output
+      error = (err as Error).message;
+      dispatch('error', { message: error });
+    } finally {
+      loading = false;
+    }
+  }
 </script>
 
 <div class={cn('flex flex-col gap-6', className)} {...restProps}>
   <Card.Root class="overflow-hidden p-0">
     <Card.Content class="grid p-0 md:grid-cols-2">
-      <form class="p-6 md:p-8">
+      <form class="p-6 md:p-8" on:submit|preventDefault={submitForm}>
         <div class="flex flex-col gap-6">
           <div class="flex flex-col items-center text-center">
             <h1 class="text-2xl font-bold">Welcome back</h1>
@@ -22,18 +105,25 @@
               Login to your account
             </p>
           </div>
+
+          {#if error}
+            <div class="text-sm text-red-600">{error}</div>
+          {/if}
+
           <div class="grid gap-3">
             <Label for="email-{id}">Email</Label>
             <Input
               id="email-{id}"
-              type="email"
-              placeholder="m@example.com"
+              type="username"
+              placeholder="deine@email.com"
               required
+              bind:value={email}
+              disabled={loading}
             />
           </div>
           <div class="grid gap-3">
             <div class="flex items-center">
-              <Label for="password">Password</Label>
+              <Label for="password-{id}">Password</Label>
               <a
                 href="##"
                 class="ml-auto text-sm underline-offset-2 hover:underline"
@@ -41,60 +131,19 @@
                 Forgot your password?
               </a>
             </div>
-            <Input id="password-{id}" type="password" required />
+            <Input
+              id="password-{id}"
+              type="password"
+              required
+              bind:value={password}
+              disabled={loading}
+            />
           </div>
-          <Button type="submit" class="w-full">Login</Button>
-          <div
-            class="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t"
-          >
-            <span class="bg-card text-muted-foreground relative z-10 px-2">
-              Or continue with
-            </span>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <Button
-              variant="outline"
-              type="button"
-              class="hover:bg-accent hover:text-accent-foreground hover:border-primary focus:ring-ring flex w-full cursor-pointer items-center justify-center gap-2 transition-colors duration-150 ease-in-out focus:ring-2 focus:outline-none"
-              onclick={() => {
-                /* TODO: Passkey flow */
-              }}
-              aria-label="Sign in with Passkey"
-              title="Sign in with Passkey"
-            >
-              <KeyRound class="h-4 w-4" />
-              <span class="text-sm">Passkey</span>
-            </Button>
-            <Button
-              variant="outline"
-              type="button"
-              class="hover:bg-accent hover:text-accent-foreground hover:border-primary focus:ring-ring flex w-full cursor-pointer items-center justify-center gap-2 transition-colors duration-150 ease-in-out focus:ring-2 focus:outline-none"
-              onclick={() => {
-                /* TODO: Azure SSO */
-              }}
-              aria-label="Sign in with Azure SSO"
-              title="Sign in with Azure SSO"
-            >
-              <CloudCheck class="h-4 w-4" />
-              <span class="text-sm">Azure</span>
-            </Button>
-          </div>
+          <Button type="submit" class="w-full" disabled={loading}>
+            {#if loading}Loading...{:else}Login{/if}
+          </Button>
         </div>
       </form>
-      <div
-        class="bg-muted relative hidden items-center justify-center p-8 md:flex"
-      >
-        <div class="flex flex-col items-center gap-3 text-center">
-          <Database
-            class="h-40 w-40 text-violet-500 dark:text-violet-400"
-            aria-hidden="true"
-          />
-          <span
-            class="text-lg font-semibold text-violet-600 dark:text-violet-300"
-            >ichwilldich</span
-          >
-        </div>
-      </div>
     </Card.Content>
   </Card.Root>
 </div>
