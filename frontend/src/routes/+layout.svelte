@@ -1,14 +1,8 @@
 <script lang="ts">
-  import { ModeWatcher, Toaster } from 'positron-components/components/ui';
   import '../app.css';
   import AppSidebar from '$lib/components/navbar/sidebar-app/sidebar-app.svelte';
-  import { Breadcrumb } from 'positron-components/components/ui';
-  import { Separator } from 'positron-components/components/ui';
   import { Sidebar } from 'positron-components/components/ui';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
-  import { browser } from '$app/environment';
-  import { onMount } from 'svelte';
 
   interface Props {
     children?: import('svelte').Snippet;
@@ -18,8 +12,6 @@
 
   const noLayout = ['/login', '/oauth', '/oauth/logout'];
 </script>
-
-<svelte:head></svelte:head>
 
 {#if !noLayout.includes(page.url.pathname)}
   <Sidebar.Provider class="min-h-screen">

@@ -101,7 +101,7 @@ impl BodyWriter for () {
 #[async_trait::async_trait]
 impl BodyWriter for FileWriter {
   async fn new() -> Result<Self> {
-    let path = std::env::temp_dir().join(format!("ichwilldich-{}", Uuid::new_v4()));
+    let path = std::env::temp_dir().join(format!("sagittarius-{}", Uuid::new_v4()));
     let file = OpenOptions::new()
       .create_new(true)
       .read(true)

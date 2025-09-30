@@ -37,7 +37,7 @@
     Tabs
   } from 'positron-components/components/ui';
 
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
 
   // Buckets-Daten (sollten aus einem Store oder API kommen)
   const buckets = [
@@ -94,7 +94,7 @@
   ];
 
   // Aktuelles Bucket aus URL-Parameter
-  let selectedBucket = $derived(buckets.find((b) => b.id === $page.params.id));
+  let selectedBucket = $derived(buckets.find((b) => b.id === page.params.id));
 
   // Demo Files für das File System
   let files = $state([

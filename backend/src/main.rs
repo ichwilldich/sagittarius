@@ -15,6 +15,7 @@ mod auth;
 mod config;
 mod db;
 mod example;
+mod frontend;
 mod macros;
 mod s3;
 
@@ -39,7 +40,9 @@ async fn main() {
 }
 
 async fn router(config: &Config) -> Router {
-  auth::router()
+  Router::new()
+    .merge(frontend::router())
+    .nest("/auth", auth::router())
     .merge(example::router())
     .add_base_layers(&config.base)
     .await
@@ -52,6 +55,7 @@ async fn s3_router(config: &Config) -> Router {
 router_extension!(
   async fn state(self, config: &Config) -> Self {
     use auth::auth;
+    use frontend::frontend;
     use s3::s3;
 
     let db = db::init_db(config).await;
@@ -60,6 +64,8 @@ router_extension!(
       .s3(config)
       .await
       .auth(config, &db)
+      .await
+      .frontend()
       .await
       .layer(Extension(db))
   }

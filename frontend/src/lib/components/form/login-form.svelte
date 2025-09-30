@@ -144,7 +144,7 @@
             <h2
               class="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-3xl font-bold text-transparent"
             >
-              ichwilldich
+              sagittarius
             </h2>
           </div>
 

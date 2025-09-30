@@ -3,7 +3,7 @@
   import { Search, Folder, Plus, BarChart3 } from '@lucide/svelte';
   import { Card, Button, Input } from 'positron-components/components/ui';
   import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -68,7 +68,7 @@
   let filteredBuckets = $state(buckets);
 
   // Aktive Bucket-ID aus der URL
-  let selectedBucketId = $derived($page.params.id);
+  let selectedBucketId = $derived(page.params.id);
   let selectedBucket = $derived(buckets.find((b) => b.id === selectedBucketId));
 
   // Suchfunktion als Effect

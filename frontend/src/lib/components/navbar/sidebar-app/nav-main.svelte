@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { Collapsible } from 'positron-components/components/ui';
   import { Sidebar } from 'positron-components/components/ui';
-  import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-  import { Button } from 'bits-ui';
   let {
     items
   }: {

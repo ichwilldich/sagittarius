@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Folder, Database, Plus } from '@lucide/svelte';
   import { Card, Button } from 'positron-components/components/ui';
-  import { goto } from '$app/navigation';
 
   function handleNewBucket() {
     console.log('Create new bucket');
