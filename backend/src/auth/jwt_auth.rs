@@ -7,8 +7,8 @@ use axum_extra::{
   extract::CookieJar,
   headers::{Authorization, authorization::Bearer},
 };
-use http::request::Parts;
 use centaurus::{bail, error::ErrorReport};
+use http::request::Parts;
 use uuid::Uuid;
 
 use crate::{auth::jwt_state::JwtState, db::Connection};

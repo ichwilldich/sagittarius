@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
 use axum_extra::headers::authorization::Credentials;
+use centaurus::{bail, error::ErrorReport};
 use chrono::NaiveDate;
 use eyre::Context;
 use http::HeaderValue;
-use centaurus::{bail, error::ErrorReport};
 use tracing::instrument;
 
 #[derive(Debug)]

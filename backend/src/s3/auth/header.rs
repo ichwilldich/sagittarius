@@ -9,11 +9,11 @@ use axum_extra::{
   TypedHeader,
   headers::{Authorization, ContentEncoding, Date},
 };
+use centaurus::{bail, error::Result};
 use chrono::{DateTime, Utc};
 use eyre::{Context, OptionExt};
 use futures::StreamExt;
 use http::request::Parts;
-use centaurus::{bail, error::Result};
 use memchr::memchr;
 use sha2::{Digest, Sha256};
 use tracing::instrument;

@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use axum::extract::{FromRequest, Multipart, Request};
 use base64::prelude::*;
+use centaurus::{bail, error::Result};
 use chrono::NaiveDateTime;
 use eyre::Context;
-use centaurus::{bail, error::Result};
 use tracing::instrument;
 
 use crate::s3::{

@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use axum::{extract::Request, response::IntoResponse, routing::Route, Router};
+use axum::{Router, extract::Request, response::IntoResponse, routing::Route};
 use tower::{Layer, Service};
 
 #[macro_export]

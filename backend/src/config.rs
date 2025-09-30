@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use centaurus::{config::BaseConfig, FromReqExtension};
+use centaurus::{FromReqExtension, config::BaseConfig};
 use clap::Parser;
 
 use crate::s3::storage::StorageType;

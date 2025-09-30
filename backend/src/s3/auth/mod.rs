@@ -8,8 +8,8 @@ use axum_extra::{
   TypedHeader,
   headers::{ContentType, Mime},
 };
-use http::Method;
 use centaurus::error::ErrorReport;
+use http::Method;
 use tracing::instrument;
 
 use crate::s3::auth::{

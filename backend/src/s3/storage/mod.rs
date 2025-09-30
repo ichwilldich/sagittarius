@@ -4,8 +4,8 @@ use std::sync::Arc;
 use std::{io::Result, path::PathBuf};
 
 use axum::Extension;
-use clap::ValueEnum;
 use centaurus::FromReqExtension;
+use clap::ValueEnum;
 use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt};
 

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use axum_extra::extract::cookie::{Cookie, SameSite};
+use centaurus::{FromReqExtension, error::Result};
 use chrono::{Duration, Utc};
 use eyre::ContextCompat;
-use centaurus::{FromReqExtension, error::Result};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rsa::{
   RsaPrivateKey, RsaPublicKey,

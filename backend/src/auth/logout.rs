@@ -1,8 +1,8 @@
 use axum::{Router, routing::post};
 use axum_extra::extract::CookieJar;
+use centaurus::error::Result;
 use chrono::DateTime;
 use eyre::ContextCompat;
-use centaurus::error::Result;
 use time::Duration;
 
 use crate::{

@@ -1,7 +1,7 @@
+use centaurus::error::Result;
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use http::request::Parts;
-use centaurus::error::Result;
 use sha2::{Digest, Sha256};
 use tracing::instrument;
 
