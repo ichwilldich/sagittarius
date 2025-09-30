@@ -8,7 +8,7 @@
   import CreditCardIcon from '@lucide/svelte/icons/credit-card';
   import LogOutIcon from '@lucide/svelte/icons/log-out';
   import SparklesIcon from '@lucide/svelte/icons/sparkles';
-    import { Ungroup } from '@lucide/svelte';
+  import { Ungroup } from '@lucide/svelte';
   let { user }: { user: { name: string; email: string; avatar: string } } =
     $props();
   let sidebar = Sidebar.useSidebar();
@@ -18,7 +18,7 @@
   <Sidebar.MenuItem>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        {#snippet child({ props }: { props: Record<string, unknown> }) }
+        {#snippet child({ props }: { props: Record<string, unknown> })}
           <Sidebar.MenuButton
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"

@@ -10,17 +10,17 @@
   import { goto } from '$app/navigation';
   import { password_login } from '$lib/backend/auth.svelte';
 
-  
- 
-  const props:HTMLAttributes<HTMLDivElement> & { baseUrl?: string; id?: string } = $props();
+  const props: HTMLAttributes<HTMLDivElement> & {
+    baseUrl?: string;
+    id?: string;
+  } = $props();
   let { class: className, id, baseUrl: baseUrlProp, ...restProps } = props;
 
- 
   const baseUrl: string =
     (baseUrlProp as string | undefined) ??
     (import.meta.env.VITE_API_URL as string) ??
     '/backend';
-    
+
   const endpoint = `${baseUrl}/auth`;
 
   const dispatch = createEventDispatcher();
