@@ -16,7 +16,6 @@
   function openSidebar() {
     if (!sidebar) return;
     if (typeof sidebar.toggle === 'function') sidebar.toggle();
-    else if (typeof sidebar.open === 'function') sidebar.open();
     else if (typeof sidebar.setOpen === 'function') sidebar.setOpen(true);
   }
 </script>

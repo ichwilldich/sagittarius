@@ -10,19 +10,17 @@
   import { goto } from '$app/navigation';
   import { password_login } from '$lib/backend/auth.svelte';
 
-  // Svelte 5: $props() nur einmal
-  const props = $props() as HTMLAttributes<HTMLDivElement> & {
-    baseUrl?: string;
-    id?: string;
-  };
+  
+ 
+  const props:HTMLAttributes<HTMLDivElement> & { baseUrl?: string; id?: string } = $props();
   let { class: className, id, baseUrl: baseUrlProp, ...restProps } = props;
 
-  // Base-URL aus Prop, Env oder Fallback
+ 
   const baseUrl: string =
     (baseUrlProp as string | undefined) ??
     (import.meta.env.VITE_API_URL as string) ??
     '/backend';
-  // Login-Route
+    
   const endpoint = `${baseUrl}/auth`;
 
   const dispatch = createEventDispatcher();
@@ -63,7 +61,7 @@
 <div class={cn('flex flex-col gap-6', className)} {...restProps}>
   <Card.Root class="overflow-hidden p-0">
     <Card.Content class="grid p-0 md:grid-cols-2">
-      <form class="p-6 md:p-8" on:submit|preventDefault={submitForm}>
+      <form class="p-6 md:p-8" onsubmit={submitForm}>
         <div class="flex flex-col gap-6">
           <div class="flex flex-col items-center text-center">
             <h1 class="text-2xl font-bold">Welcome back</h1>
