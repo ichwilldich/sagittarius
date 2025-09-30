@@ -9,7 +9,10 @@ mod key;
 mod user;
 
 pub async fn init_db(config: &crate::config::Config) -> Connection {
-  let mut options = ConnectOptions::new(&config.db_url);
+  let mut options = ConnectOptions::new(format!(
+    "sqlite:{}/sqlite.db?mode=rwc",
+    config.storage_path.display()
+  ));
   options
     .max_connections(config.database_max_connections)
     .min_connections(config.database_min_connections)

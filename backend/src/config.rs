@@ -21,8 +21,6 @@ pub struct Config {
   pub s3_port: u16,
 
   // database
-  #[clap(long, env)]
-  pub db_url: String,
   #[clap(long, env, default_value = "1024")]
   pub database_max_connections: u32,
   #[clap(long, env, default_value = "1")]
@@ -95,13 +93,6 @@ mod test {
     }
     let cfg = Config::parse_from([""]);
     assert_eq!(cfg.s3_port, 9000);
-  }
-
-  #[test]
-  fn test_db_url() {
-    base_vars();
-    let cfg = Config::parse_from([""]);
-    assert_eq!(cfg.db_url, "postgresql://test:test@localhost:5432/test");
   }
 
   #[test]
