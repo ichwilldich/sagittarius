@@ -1,16 +1,19 @@
 [workspace]
 resolver = "3"
-members = [
-  "apps/s3/backend",
-  "apps/s3/backend/migration",
-  "apps/s3/backend/entity",
-  "packages/rust",
-  "packages/rust-derive",
-]
+members = ["backend", "backend/migration", "backend/entity"]
 
 [workspace.dependencies]
-ichwilldich-lib = { path = "packages/rust" }
-
+centaurus = { version = "0.2.0", features = [
+  "axum",
+  "logging",
+  "argon2",
+  "base64",
+  "chrono",
+  "hmac",
+  "jsonwebtoken",
+  "rsa",
+  "sea-orm",
+] }
 uuid = { version = "1.18.1", features = ["v4"] }
 axum = { version = "0.8.4", features = [
   "macros",

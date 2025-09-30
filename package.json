@@ -1,6 +1,6 @@
 {
   "workspaces": [
-    "apps/s3/frontend"
+    "frontend"
   ],
   "devDependencies": {
     "prettier": "^3.6.2",

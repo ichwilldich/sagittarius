@@ -26,7 +26,7 @@
 
   # Apps
   scripts.run-s3.exec = ''
-    docker-compose -f $DEVENV_ROOT/apps/s3/docker-compose.yml up
+    docker-compose -f $DEVENV_ROOT/docker-compose.yml up
   '';
 
   # Tests

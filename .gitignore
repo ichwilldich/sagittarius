@@ -11,4 +11,4 @@ devenv.local.nix
 
 *.tsbuildinfo
 
-/apps/s3/postgres/
+/postgres/
