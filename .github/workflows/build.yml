@@ -21,15 +21,8 @@ jobs:
       id-token: write
       security-events: write
 
-    strategy:
-      matrix:
-        app:
-          - s3
-        image:
-          - frontend
-          - backend
     env:
-      IMAGE: ${{ github.repository }}/${{ matrix.app }}-${{ matrix.image }}
+      IMAGE: ${{ github.repository }}/sagittarius
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -57,12 +50,10 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./
-          file: apps/dockerfiles/Dockerfile.${{ matrix.image }}
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: APP=${{ matrix.app }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

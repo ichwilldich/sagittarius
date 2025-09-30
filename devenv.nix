@@ -25,12 +25,12 @@
   };
 
   # Apps
-  scripts.run-s3.exec = ''
-    docker-compose -f $DEVENV_ROOT/apps/s3/docker-compose.yml up
+  scripts.run.exec = ''
+    docker-compose -f $DEVENV_ROOT/docker-compose.yml up
   '';
 
   # Tests
-  scripts.test-s3.exec = ''
+  scripts.test-backend.exec = ''
     cargo watch -x "nextest run --workspace --all-features"
   '';
 }

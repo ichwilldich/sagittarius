@@ -1,0 +1,44 @@
+services:
+  frontend:
+    image: ghcr.io/profiidev/images/node-alpine-dev:main
+    pull_policy: always
+    volumes:
+      - .:/app
+    tty: true
+    networks:
+      - nginx
+    # command: npm install
+    command: npm run dev -- --host
+    working_dir: /app/frontend
+
+  backend:
+    image: ghcr.io/profiidev/images/rust-musl-watch:main
+    pull_policy: always
+    volumes:
+      - .:/app
+    networks:
+      - nginx
+    ports:
+      - '9000:9000'
+    tty: true
+    entrypoint: ['tini', '--']
+    command: ['cargo', 'watch', '-x', 'run', '-C', 'backend']
+    environment:
+      - RUST_LIB_BACKTRACE=0
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - '5173:5173'
+    networks:
+      - nginx
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
+    depends_on:
+      - frontend
+      - backend
+
+networks:
+  nginx:
