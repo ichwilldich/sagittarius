@@ -1,6 +1,12 @@
 import type JSEncrypt from 'jsencrypt';
 import { browser } from '$app/environment';
-import { post, get, ContentType, ResponseType, RequestError } from 'positron-components/backend';
+import {
+  post,
+  get,
+  ContentType,
+  ResponseType,
+  RequestError
+} from 'positron-components/backend';
 
 let encrypt: false | undefined | JSEncrypt = $state(browser && undefined);
 
