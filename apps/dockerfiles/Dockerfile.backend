@@ -1,8 +1,6 @@
 ARG TARGET=x86_64-unknown-linux-musl
 ARG APP=s3
-ARG APP_PATH=apps/${APP}/backend
-ARG LIB_PATH=packages/rust
-ARG DERIVE_LIB_PATH=packages/rust-derive
+ARG APP_PATH=backend
 
 FROM ghcr.io/profiidev/images/rust-musl-builder:main AS planner
 
@@ -13,8 +11,6 @@ ARG DERIVE_LIB_PATH
 COPY ${APP_PATH}/Cargo.toml ${APP_PATH}/
 COPY ${APP_PATH}/entity/Cargo.toml ${APP_PATH}/entity/
 COPY ${APP_PATH}/migration/Cargo.toml ${APP_PATH}/migration/
-COPY ${LIB_PATH}/Cargo.toml ${LIB_PATH}/
-COPY ${DERIVE_LIB_PATH}/Cargo.toml ${DERIVE_LIB_PATH}/
 COPY ./Cargo.lock ./Cargo.toml ./
 
 RUN cargo chef prepare --recipe-path recipe.json --bin positron-backend
@@ -37,10 +33,6 @@ COPY ${APP_PATH}/entity/Cargo.toml ${APP_PATH}/entity/
 COPY ${APP_PATH}/entity/src ${APP_PATH}/entity/src
 COPY ${APP_PATH}/migration/Cargo.toml ${APP_PATH}/migration/
 COPY ${APP_PATH}/migration/src ${APP_PATH}/migration/src
-COPY ${LIB_PATH}/Cargo.toml ${LIB_PATH}/
-COPY ${LIB_PATH}/src ${LIB_PATH}/src
-COPY ${DERIVE_LIB_PATH}/Cargo.toml ${DERIVE_LIB_PATH}/
-COPY ${DERIVE_LIB_PATH}/src ${DERIVE_LIB_PATH}/src
 COPY ./Cargo.lock ./Cargo.toml ./
 
 RUN cd ${APP_PATH} && cargo build --release --target $TARGET
