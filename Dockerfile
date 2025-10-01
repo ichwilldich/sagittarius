@@ -49,6 +49,7 @@ RUN mv ./target/$TARGET/release/backend ./app
 FROM node:22-alpine
 
 ARG FRONTEND_DIR
+ENV STORAGE_PATH=/data
 
 COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

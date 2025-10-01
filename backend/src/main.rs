@@ -6,7 +6,7 @@ use centaurus::init::{
 use clap::Parser;
 #[cfg(debug_assertions)]
 use dotenv::dotenv;
-use tokio::join;
+use tokio::{fs, join};
 use tracing::info;
 
 use crate::{config::Config, macros::DualRouterExt};
@@ -26,6 +26,9 @@ async fn main() {
 
   let config = Config::parse();
   init_logging(&config.base);
+  fs::create_dir_all(&config.storage_path)
+    .await
+    .expect("failed to create storage path");
 
   let app_listener = listener_setup(config.base.port).await;
   let s3_listener = listener_setup(config.s3_port).await;
