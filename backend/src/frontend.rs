@@ -12,7 +12,9 @@ use hyper_util::{client::legacy::connect::HttpConnector, rt::TokioExecutor};
 use crate::{macros::DualRouterExt, router_extension};
 
 pub fn router() -> Router {
-  Router::new().route("/", get(handler))
+  Router::new()
+    .route("/{*p}", get(handler))
+    .route("/", get(handler))
 }
 
 router_extension!(

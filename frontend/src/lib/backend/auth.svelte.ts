@@ -19,7 +19,7 @@ export const fetch_key = async () => {
     return RequestError.Other;
   }
 
-  let key = await get<{ key: string }>('/backend/key', ResponseType.Json);
+  let key = await get<{ key: string }>('/api/auth/key', ResponseType.Json);
 
   if (typeof key !== 'object') {
     return key;
@@ -39,7 +39,7 @@ export const password_login = async (name: string, password: string) => {
 
   let encrypted_password = encrypt.encrypt(password);
   let res = await post<undefined>(
-    '/backend/auth',
+    '/api/auth/auth',
     ResponseType.None,
     ContentType.Json,
     JSON.stringify({

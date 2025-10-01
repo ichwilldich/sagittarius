@@ -40,12 +40,22 @@ async fn main() {
 }
 
 async fn router(config: &Config) -> Router {
-  Router::new()
-    .merge(frontend::router())
+  let mut router = frontend::router();
+
+  let rest_router = Router::new()
     .nest("/auth", auth::router())
-    .merge(example::router())
-    .add_base_layers(&config.base)
-    .await
+    .merge(example::router());
+
+  #[cfg(debug_assertions)]
+  {
+    router = router.merge(rest_router);
+  }
+  #[cfg(not(debug_assertions))]
+  {
+    router = router.nest("/api", rest_router);
+  }
+
+  router.add_base_layers(&config.base).await
 }
 
 async fn s3_router(config: &Config) -> Router {
