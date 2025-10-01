@@ -1,27 +1,20 @@
 <script lang="ts">
-  import { Card } from 'positron-components';
-  import { Label } from 'positron-components';
-  import { Input } from 'positron-components';
-  import { Button } from 'positron-components';
-  import { cn } from 'positron-components';
-  import type { HTMLAttributes } from 'svelte/elements';
+  import { Card } from 'positron-components/components/ui';
+  import { Label } from 'positron-components/components/ui';
+  import { Input } from 'positron-components/components/ui';
+  import { Button } from 'positron-components/components/ui';
+  import { cn } from 'positron-components/utils';
   import { Database } from '@lucide/svelte';
   import { createEventDispatcher } from 'svelte';
   import { goto } from '$app/navigation';
   import { password_login } from '$lib/backend/auth.svelte';
 
-  const props: HTMLAttributes<HTMLDivElement> & {
+  const props: {
     baseUrl?: string;
     id?: string;
+    class?: string;
   } = $props();
-  let { class: className, id, baseUrl: baseUrlProp, ...restProps } = props;
-
-  const baseUrl: string =
-    (baseUrlProp as string | undefined) ??
-    (import.meta.env.VITE_API_URL as string) ??
-    '/backend';
-
-  const endpoint = `${baseUrl}/auth`;
+  let { class: className, id } = props;
 
   const dispatch = createEventDispatcher();
 
@@ -58,7 +51,7 @@
   }
 </script>
 
-<div class={cn('flex flex-col gap-6', className)} {...restProps}>
+<div class={cn('flex flex-col gap-6', className)}>
   <Card.Root class="overflow-hidden p-0">
     <Card.Content class="grid p-0 md:grid-cols-2">
       <form class="p-6 md:p-8" onsubmit={submitForm}>

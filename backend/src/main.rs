@@ -40,10 +40,13 @@ async fn main() {
 }
 
 async fn router(config: &Config) -> Router {
-  Router::new()
-    .merge(frontend::router())
-    .nest("/auth", auth::router())
-    .merge(example::router())
+  frontend::router()
+    .nest(
+      "/api",
+      Router::new()
+        .nest("/auth", auth::router())
+        .merge(example::router()),
+    )
     .add_base_layers(&config.base)
     .await
 }
