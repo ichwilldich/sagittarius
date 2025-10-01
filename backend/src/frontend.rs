@@ -21,10 +21,11 @@ router_extension!(
   async fn frontend(self) -> Self {
     #[cfg(not(debug_assertions))]
     let frontend_dir = env!("FRONTEND_DIR");
+
     #[cfg(not(debug_assertions))]
-    let frontend_port: u16 = env!("FRONTEND_PORT").parse().unwrap_or(3000);
+    let frontend_url = env!("FRONTEND_URL");
     #[cfg(debug_assertions)]
-    let frontend_port = 3000;
+    let frontend_url = "http://frontend:5173";
 
     #[cfg(not(debug_assertions))]
     let handle = tokio::process::Command::new("node")
@@ -36,7 +37,7 @@ router_extension!(
     self.layer(Extension(FrontendState {
       client: hyper_util::client::legacy::Client::<(), ()>::builder(TokioExecutor::new())
         .build(HttpConnector::new()),
-      frontend_port,
+      frontend_url,
       #[cfg(not(debug_assertions))]
       _handle: std::sync::Arc::new(handle),
     }))
@@ -48,7 +49,7 @@ type Client = hyper_util::client::legacy::Client<HttpConnector, Body>;
 #[derive(FromReqExtension, Clone)]
 struct FrontendState {
   client: Client,
-  frontend_port: u16,
+  frontend_url: &'static str,
   #[cfg(not(debug_assertions))]
   _handle: std::sync::Arc<tokio::process::Child>,
 }
@@ -62,7 +63,7 @@ async fn handler(state: FrontendState, mut req: Request) -> Result<Response, Sta
     .map(|pq| pq.as_str())
     .unwrap_or(path);
 
-  let uri = format!("http://localhost:{}{}", state.frontend_port, path_query);
+  let uri = format!("{}{}", state.frontend_url, path_query);
   *req.uri_mut() = uri.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
   Ok(
