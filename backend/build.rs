@@ -6,8 +6,8 @@ fn main() {
     println!("cargo:rustc-env=FRONTEND_DIR={}", frontend_dir);
 
     let frontend_port =
-      std::env::var("FRONTEND_PORT").unwrap_or_else(|_| "http://localhost:3000".to_string());
-    println!("cargo:rerun-if-env-changed=FRONTEND_PORT");
-    println!("cargo:rustc-env=FRONTEND_PORT={}", frontend_port);
+      std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    println!("cargo:rerun-if-env-changed=FRONTEND_URL");
+    println!("cargo:rustc-env=FRONTEND_URL={}", frontend_port);
   }
 }
