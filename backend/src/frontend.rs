@@ -31,6 +31,7 @@ router_extension!(
     let handle = tokio::process::Command::new("node")
       .arg(".")
       .current_dir(frontend_dir)
+      .kill_on_drop(true)
       .spawn()
       .expect("Failed to start frontend server");
 
