@@ -1,17 +1,10 @@
-use std::ops::Deref;
 use std::path::{self, Path};
-use std::sync::Arc;
 use std::{io::Result, path::PathBuf};
 
-use axum::Extension;
-use centaurus::FromReqExtension;
 use clap::ValueEnum;
 use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-use crate::config::Config;
-use crate::macros::DualRouterExt;
-use crate::router_extension;
 use crate::s3::BUCKET_DIR;
 use crate::s3::interface::S3Interface;
 

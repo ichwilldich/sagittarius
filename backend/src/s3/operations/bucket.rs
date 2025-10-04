@@ -1,10 +1,9 @@
 use axum::{Router, extract::Path, routing::put};
-use centaurus::{bail, error::Result, path, req::xml::Xml};
+use centaurus::{error::Result, req::xml::Xml};
 use http::HeaderMap;
 use serde::Deserialize;
 
 use crate::s3::{
-  BUCKET_DIR,
   auth::{Identity, S3Auth},
   interface::S3Interface,
 };
