@@ -1,17 +1,12 @@
-use std::ops::Deref;
 use std::path::{self, Path};
-use std::sync::Arc;
 use std::{io::Result, path::PathBuf};
 
-use axum::Extension;
-use centaurus::FromReqExtension;
 use clap::ValueEnum;
 use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-use crate::config::Config;
-use crate::macros::DualRouterExt;
-use crate::router_extension;
+use crate::s3::BUCKET_DIR;
+use crate::s3::interface::S3Interface;
 
 pub mod no_raid;
 
@@ -46,43 +41,18 @@ pub enum StorageType {
 }
 
 impl StorageType {
-  pub async fn storage(&self, base_path: PathBuf) -> Result<StorageState> {
+  pub async fn storage(&self, base_path: PathBuf) -> Result<S3Interface> {
     let base_path = path::absolute(base_path)?;
     if !base_path.exists() {
       fs::create_dir_all(&base_path).await?;
     }
+    let bucket_path = base_path.join(BUCKET_DIR);
+    if !bucket_path.exists() {
+      fs::create_dir_all(&bucket_path).await?;
+    }
 
-    Ok(StorageState::new(match self {
+    Ok(S3Interface::new(match self {
       StorageType::NoRaid => no_raid::NoRaid::new(base_path),
     }))
-  }
-}
-
-router_extension!(
-  async fn storage(self, config: &Config) -> Self {
-    self.layer(Extension(
-      config
-        .storage_type
-        .storage(config.storage_path.clone())
-        .await
-        .expect("Failed to initialize storage"),
-    ))
-  }
-);
-
-#[derive(FromReqExtension, Clone)]
-pub struct StorageState(Arc<dyn Storage + Send + Sync>);
-
-impl StorageState {
-  pub fn new<S: Storage + Send + Sync + 'static>(storage: S) -> Self {
-    Self(Arc::new(storage))
-  }
-}
-
-impl Deref for StorageState {
-  type Target = dyn Storage + Send + Sync;
-
-  fn deref(&self) -> &Self::Target {
-    &*self.0
   }
 }

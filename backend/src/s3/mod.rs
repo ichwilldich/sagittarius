@@ -3,8 +3,11 @@ use axum::Router;
 
 mod auth;
 mod header;
+pub mod interface;
 mod operations;
 pub mod storage;
+
+const BUCKET_DIR: &str = "buckets";
 
 pub fn router() -> Router {
   operations::router()
@@ -12,8 +15,8 @@ pub fn router() -> Router {
 
 router_extension!(
   async fn s3(self, config: &Config) -> Self {
-    use storage::storage;
+    use interface::interface;
 
-    self.storage(config).await
+    self.interface(config).await
   }
 );
