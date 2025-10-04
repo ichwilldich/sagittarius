@@ -1,0 +1,49 @@
+use axum::Extension;
+use centaurus::{FromReqExtension, bail, error::Result, path};
+
+use crate::{config::Config, macros::DualRouterExt, router_extension, s3::BUCKET_DIR};
+use std::{ops::Deref, sync::Arc};
+
+use crate::s3::storage::Storage;
+
+#[derive(Clone, FromReqExtension)]
+pub struct S3Interface {
+  storage: Arc<dyn Storage + Send + Sync>,
+}
+
+impl S3Interface {
+  pub fn new<S: Storage + Send + Sync + 'static>(storage: S) -> Self {
+    Self {
+      storage: Arc::new(storage),
+    }
+  }
+  pub async fn create_bucket(&self, bucket: &String) -> Result<()> {
+    if self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
+      bail!(CONFLICT, "Bucket {bucket} already exists");
+    }
+
+    self.create_dir(&path!(BUCKET_DIR, &bucket)).await?;
+
+    Ok(())
+  }
+}
+
+impl Deref for S3Interface {
+  type Target = dyn Storage + Send + Sync;
+
+  fn deref(&self) -> &Self::Target {
+    &*self.storage
+  }
+}
+
+router_extension!(
+  async fn interface(self, config: &Config) -> Self {
+    self.layer(Extension(
+      config
+        .storage_type
+        .storage(config.storage_path.clone())
+        .await
+        .expect("Failed to initialize storage"),
+    ))
+  }
+);

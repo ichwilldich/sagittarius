@@ -4,9 +4,9 @@ use http::HeaderMap;
 use serde::Deserialize;
 
 use crate::s3::{
+  BUCKET_DIR,
   auth::{Identity, S3Auth},
-  operations::BUCKET_DIR,
-  storage::StorageState,
+  interface::S3Interface,
 };
 
 pub fn router() -> Router {
@@ -15,7 +15,7 @@ pub fn router() -> Router {
 
 /// TODO: Handling of additional header options
 async fn create_bucket(
-  storage: StorageState,
+  interface: S3Interface,
   Path(bucket): Path<String>,
   S3Auth { body, identity, .. }: S3Auth<Option<Xml<CreateBucketConfiguration>>>,
 ) -> Result<HeaderMap> {
@@ -29,15 +29,7 @@ async fn create_bucket(
     }
   }
 
-  if storage
-    .list_dir(&path!(BUCKET_DIR))
-    .await?
-    .contains(&bucket)
-  {
-    bail!(CONFLICT, "Bucket {bucket} already exists");
-  }
-
-  storage.create_dir(&path!(BUCKET_DIR, &bucket)).await?;
+  interface.create_bucket(&bucket).await?;
 
   let mut headers = HeaderMap::new();
   headers.insert("Location", format!("/{bucket}").parse()?);
