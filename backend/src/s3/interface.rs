@@ -26,6 +26,21 @@ impl S3Interface {
 
     Ok(())
   }
+
+  pub async fn delete_bucket(&self, bucket: &String) -> Result<()> {
+    if !self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
+      bail!(NOT_FOUND, "Bucket {bucket} not found");
+    }
+
+    let objects = self.list_dir(&path!(BUCKET_DIR, &bucket)).await?;
+    if !objects.is_empty() {
+      bail!(CONFLICT, "Bucket {bucket} is not empty");
+    }
+
+    self.delete_dir(&path!(BUCKET_DIR, &bucket)).await?;
+
+    Ok(())
+  }
 }
 
 impl Deref for S3Interface {

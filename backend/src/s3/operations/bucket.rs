@@ -1,4 +1,4 @@
-use axum::{Router, extract::Path, routing::put};
+use axum::{Router, extract::Path, routing::delete, routing::put};
 use centaurus::{error::Result, req::xml::Xml};
 use http::HeaderMap;
 use serde::Deserialize;
@@ -9,7 +9,9 @@ use crate::s3::{
 };
 
 pub fn router() -> Router {
-  Router::new().route("/{*bucket}", put(create_bucket))
+  Router::new()
+    .route("/{*bucket}", put(create_bucket))
+    .route("/{*bucket}", delete(delete_bucket))
 }
 
 /// TODO: Handling of additional header options
@@ -34,6 +36,27 @@ async fn create_bucket(
   headers.insert("Location", format!("/{bucket}").parse()?);
 
   Ok(headers)
+}
+
+async fn delete_bucket(
+  interface: S3Interface,
+  Path(bucket): Path<String>,
+  S3Auth { identity, .. }: S3Auth<()>,
+) -> Result<()> {
+  let bucket = bucket.trim_end_matches('/').to_string();
+
+  match identity {
+    Identity::AccessKey(key) => {
+      tracing::info!("AccessKey {key} deleting bucket {bucket}");
+    }
+    Identity::Anonymous => {
+      tracing::warn!("Anonymous access to delete bucket");
+    }
+  }
+
+  interface.delete_bucket(&bucket).await?;
+
+  Ok(())
 }
 
 /// TODO: Handling of additional configuration options
