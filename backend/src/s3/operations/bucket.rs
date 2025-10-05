@@ -15,7 +15,9 @@ use crate::s3::{
 pub fn router() -> Router {
   Router::new()
     .route("/{bucket}", put(create_bucket))
+    .route("/{bucket}/", put(create_bucket))
     .route("/{bucket}", delete(delete_bucket))
+    .route("/{bucket}/", delete(delete_bucket))
     .route("/", get(list_buckets))
 }
 
@@ -51,8 +53,6 @@ async fn delete_bucket(
   Path(bucket): Path<String>,
   S3Auth { identity, .. }: S3Auth,
 ) -> Result<StatusCode> {
-  let bucket = bucket.trim_end_matches('/').to_string();
-
   match identity {
     Identity::AccessKey(key) => {
       tracing::info!("AccessKey {key} deleting bucket {bucket}");
