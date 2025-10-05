@@ -1,11 +1,11 @@
 use axum::{
   Router,
-  extract::Path,
+  extract::{Path, Query},
   routing::{delete, get, put},
 };
-use centaurus::{error::Result, req::xml::Xml};
-use http::{HeaderMap, header::CONTENT_TYPE};
-use serde::Deserialize;
+use centaurus::{bail, error::Result, req::xml::Xml};
+use http::{HeaderMap, StatusCode};
+use serde::{Deserialize, Serialize};
 
 use crate::s3::{
   auth::{Identity, S3Auth},
@@ -14,8 +14,8 @@ use crate::s3::{
 
 pub fn router() -> Router {
   Router::new()
-    .route("/{*bucket}", put(create_bucket))
-    .route("/{*bucket}", delete(delete_bucket))
+    .route("/{bucket}", put(create_bucket))
+    .route("/{bucket}", delete(delete_bucket))
     .route("/", get(list_buckets))
 }
 
@@ -23,9 +23,8 @@ pub fn router() -> Router {
 async fn create_bucket(
   interface: S3Interface,
   Path(bucket): Path<String>,
-  S3Auth { body, identity, .. }: S3Auth<Option<Xml<CreateBucketConfiguration>>>,
+  S3Auth { identity, .. }: S3Auth<Option<Xml<CreateBucketConfiguration>>>,
 ) -> Result<HeaderMap> {
-  dbg!(&body);
   match identity {
     Identity::AccessKey(key) => {
       tracing::info!("AccessKey {key} creating bucket {bucket}");
@@ -43,11 +42,15 @@ async fn create_bucket(
   Ok(headers)
 }
 
+/// TODO: Handling of additional configuration options
+#[derive(Deserialize, Debug)]
+struct CreateBucketConfiguration {}
+
 async fn delete_bucket(
   interface: S3Interface,
   Path(bucket): Path<String>,
-  S3Auth { identity, .. }: S3Auth<()>,
-) -> Result<()> {
+  S3Auth { identity, .. }: S3Auth,
+) -> Result<StatusCode> {
   let bucket = bucket.trim_end_matches('/').to_string();
 
   match identity {
@@ -61,48 +64,90 @@ async fn delete_bucket(
 
   interface.delete_bucket(&bucket).await?;
 
-  Ok(())
+  Ok(StatusCode::NO_CONTENT)
 }
 
-async fn list_buckets(interface: S3Interface) -> Result<(HeaderMap, String)> {
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct ListQuery {
+  prefix: Option<String>,
+  max_buckets: Option<usize>,
+}
+
+#[axum::debug_handler]
+async fn list_buckets(
+  interface: S3Interface,
+  Query(ListQuery {
+    prefix,
+    max_buckets,
+  }): Query<ListQuery>,
+) -> Result<Xml<ListAllMyBucketsResult>> {
   let buckets = interface.list_buckets().await?;
 
-  // einfache XML-Escaping-Funktion
-  fn xml_escape(s: &str) -> String {
-    s.chars()
-      .map(|c| match c {
-        '&' => "&amp;".into(),
-        '<' => "&lt;".into(),
-        '>' => "&gt;".into(),
-        '"' => "&quot;".into(),
-        '\'' => "&apos;".into(),
-        other => other.to_string(),
-      })
+  let buckets: Vec<String> = if let Some(prefix) = prefix.clone() {
+    buckets
+      .into_iter()
+      .filter(|b| b.starts_with(&prefix))
       .collect()
-  }
+  } else {
+    buckets
+  };
 
-  let mut xml = String::new();
-  xml.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-  xml.push_str(r#"<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">"#);
-  xml.push_str("<Buckets>");
-  for name in buckets {
-    xml.push_str("<Bucket>");
-    // nur Name + CreationDate minimal (CreationDate leer, kann ggf. mit echtem Timestamp gefüllt werden)
-    xml.push_str(&format!("<Name>{}</Name>", xml_escape(&name)));
-    xml.push_str("<CreationDate></CreationDate>");
-    xml.push_str("</Bucket>");
-  }
-  xml.push_str("</Buckets>");
-  // einfacher Owner-Block; anpassen falls echte Owner-Infos vorhanden sind
-  xml.push_str("<Owner><DisplayName>owner</DisplayName><ID>ownerid</ID></Owner>");
-  xml.push_str("</ListAllMyBucketsResult>");
+  let buckets: Vec<String> = if let Some(max) = max_buckets {
+    if !(1..=10000).contains(&max) {
+      bail!(BAD_REQUEST, "max-buckets must be between 1 and 10000");
+    }
 
-  let mut headers = HeaderMap::new();
-  headers.insert(CONTENT_TYPE, "application/xml".parse().unwrap());
+    buckets.into_iter().take(max).collect()
+  } else {
+    buckets
+  };
 
-  Ok((headers, xml))
+  let buckets: Vec<Bucket> = buckets
+    .into_iter()
+    .map(|name| Bucket {
+      name,
+      creation_date: "".into(), // TODO: fill with actual creation date if available
+      bucket_region: None,
+    })
+    .collect();
+
+  Ok(Xml(ListAllMyBucketsResult {
+    buckets: Buckets { buckets },
+    prefix,
+    owner: Owner {
+      id: "owner-id".into(),
+      display_name: "owner-display-name".into(),
+    },
+  }))
 }
 
-/// TODO: Handling of additional configuration options
-#[derive(Deserialize, Debug)]
-struct CreateBucketConfiguration {}
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct ListAllMyBucketsResult {
+  buckets: Buckets,
+  prefix: Option<String>,
+  owner: Owner,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Buckets {
+  #[serde(rename = "Bucket")]
+  buckets: Vec<Bucket>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+struct Bucket {
+  name: String,
+  creation_date: String,
+  bucket_region: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct Owner {
+  #[serde(rename = "ID")]
+  id: String,
+  display_name: String,
+}

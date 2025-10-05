@@ -34,7 +34,7 @@ impl S3Interface {
 
     let objects = self.list_dir(&path!(BUCKET_DIR, &bucket)).await?;
     if !objects.is_empty() {
-      bail!(CONFLICT, "Bucket {bucket} is not empty");
+      bail!(PRECONDITION_FAILED, "Bucket {bucket} is not empty");
     }
 
     self.delete_dir(&path!(BUCKET_DIR, &bucket)).await?;
