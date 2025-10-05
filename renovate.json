@@ -7,11 +7,7 @@
       "matchPackageNames": ["*"]
     },
     {
-      "matchPackageNames": [
-        "/zod/",
-        "/tailwind-variants/",
-        "/tracing-subscriber/"
-      ],
+      "matchPackageNames": ["/tracing-subscriber/"],
       "enabled": false
     }
   ],
