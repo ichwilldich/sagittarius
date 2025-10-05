@@ -26,6 +26,26 @@ impl S3Interface {
 
     Ok(())
   }
+
+  pub async fn delete_bucket(&self, bucket: &String) -> Result<()> {
+    if !self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
+      bail!(NOT_FOUND, "Bucket {bucket} not found");
+    }
+
+    let objects = self.list_dir(&path!(BUCKET_DIR, &bucket)).await?;
+    if !objects.is_empty() {
+      bail!(PRECONDITION_FAILED, "Bucket {bucket} is not empty");
+    }
+
+    self.delete_dir(&path!(BUCKET_DIR, &bucket)).await?;
+
+    Ok(())
+  }
+
+  pub async fn list_buckets(&self) -> Result<Vec<String>> {
+    let buckets = self.list_dir(&path!(BUCKET_DIR)).await?;
+    Ok(buckets)
+  }
 }
 
 impl Deref for S3Interface {

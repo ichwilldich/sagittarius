@@ -609,9 +609,9 @@ dependencies = [
 
 [[package]]
 name = "centaurus"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e536c6118060d5b255926c8de8cb0c144bc7ccb6101c833c03ec2c57a1848e26"
+checksum = "e6b6989212d83821ecc07fc94f26d02b7bcf21dca9ada75de008ab7bbc066907"
 dependencies = [
  "argon2",
  "axum",
