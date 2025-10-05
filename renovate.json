@@ -7,9 +7,7 @@
       "matchPackageNames": ["*"]
     },
     {
-      "matchPackageNames": [
-        "/tracing-subscriber/"
-      ],
+      "matchPackageNames": ["/tracing-subscriber/"],
       "enabled": false
     }
   ],
