@@ -8,8 +8,6 @@
     },
     {
       "matchPackageNames": [
-        "/zod/",
-        "/tailwind-variants/",
         "/tracing-subscriber/"
       ],
       "enabled": false
