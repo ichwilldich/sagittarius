@@ -41,6 +41,11 @@ impl S3Interface {
 
     Ok(())
   }
+
+  pub async fn list_buckets(&self) -> Result<Vec<String>> {
+    let buckets = self.list_dir(&path!(BUCKET_DIR)).await?;
+    Ok(buckets)
+  }
 }
 
 impl Deref for S3Interface {

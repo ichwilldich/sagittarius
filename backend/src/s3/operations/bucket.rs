@@ -1,4 +1,8 @@
-use axum::{Router, extract::Path, routing::delete, routing::put};
+use axum::{
+  Json, Router,
+  extract::Path,
+  routing::{delete, get, put},
+};
 use centaurus::{error::Result, req::xml::Xml};
 use http::HeaderMap;
 use serde::Deserialize;
@@ -12,6 +16,7 @@ pub fn router() -> Router {
   Router::new()
     .route("/{*bucket}", put(create_bucket))
     .route("/{*bucket}", delete(delete_bucket))
+    .route("/", get(list_buckets))
 }
 
 /// TODO: Handling of additional header options
@@ -57,6 +62,11 @@ async fn delete_bucket(
   interface.delete_bucket(&bucket).await?;
 
   Ok(())
+}
+
+async fn list_buckets(interface: S3Interface) -> Result<Json<Vec<String>>> {
+  let buckets = interface.list_buckets().await?;
+  Ok(Json(buckets))
 }
 
 /// TODO: Handling of additional configuration options
