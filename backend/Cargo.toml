@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 serde = { workspace = true }
 sea-orm = { workspace = true }
-centaurus = { version = "0.2.1", features = [
+centaurus = { version = "0.2.2", features = [
   "axum",
   "logging",
   "argon2",
@@ -41,7 +41,7 @@ base64 = "0.22.1"
 chrono = { version = "0.4.42", features = ["serde"] }
 eyre = "0.6.12"
 color-eyre = "0.6.5"
-jsonwebtoken = "9.3.1"
+jsonwebtoken = { version = "10.0.0", features = ["rust_crypto"] }
 rsa = "0.9.8"
 argon2 = { version = "0.5.3", features = ["std"] }
 entity = { path = "entity" }
