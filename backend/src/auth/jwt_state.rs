@@ -19,7 +19,7 @@ use crate::{auth::jwt_auth::COOKIE_NAME, config::Config, db::Connection};
 
 const JWT_KEY_NAME: &str = "jwt";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct JwtClaims {
   pub exp: i64,
   pub iss: String,
