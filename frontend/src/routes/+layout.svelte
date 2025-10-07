@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import AppSidebar from '$lib/components/navbar/sidebar-app/sidebar-app.svelte';
-  import { Sidebar } from 'positron-components/components/ui';
+  import { ModeWatcher, Sidebar } from 'positron-components/components/ui';
   import { page } from '$app/state';
 
   interface Props {
@@ -11,7 +11,10 @@
   let { children }: Props = $props();
 
   const noLayout = ['/login', '/oauth', '/oauth/logout'];
+  $inspect(page.url.pathname).with(console.log)
 </script>
+
+<ModeWatcher />
 
 {#if !noLayout.includes(page.url.pathname)}
   <Sidebar.Provider class="min-h-screen">

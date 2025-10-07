@@ -51,7 +51,7 @@
   }
 </script>
 
-<div class={cn('flex flex-col gap-6', className)}>
+<div class={cn('fle flex-cl ga-6', className)}>
   <Card.Root class="overflow-hidden p-0">
     <Card.Content class="grid p-0 md:grid-cols-2">
       <form class="p-6 md:p-8" onsubmit={submitForm}>
