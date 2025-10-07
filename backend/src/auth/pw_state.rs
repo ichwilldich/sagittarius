@@ -16,7 +16,7 @@ use rsa::{
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{config::Config, db::Connection};
+use crate::{config::EnvConfig, db::Connection};
 
 const PW_KEY: &str = "password";
 
@@ -49,7 +49,7 @@ impl PasswordState {
     Ok(password_hash)
   }
 
-  pub async fn init(config: &Config, db: &Connection) -> Self {
+  pub async fn init(config: &EnvConfig, db: &Connection) -> Self {
     let key = if let Ok(key) = db.key().get_key_by_name(PW_KEY.into()).await {
       RsaPrivateKey::from_pkcs1_pem(&key.private_key).expect("Failed to parse private password key")
     } else {
@@ -72,7 +72,7 @@ impl PasswordState {
       .to_pkcs1_pem(LineEnding::CRLF)
       .expect("Failed to export Rsa Public Key");
 
-    let pepper = config.auth_pepper.as_bytes().to_vec();
+    let pepper = config.auth.auth_pepper.as_bytes().to_vec();
     if pepper.len() > 32 {
       panic!("Pepper is longer than 32 characters");
     }
@@ -90,15 +90,15 @@ impl PasswordState {
       .await
       .expect("Failed to list users")
       .len();
-    if user_count == 0 || config.overwrite_initial_user {
+    if user_count == 0 || config.auth.overwrite_initial_user {
       let salt = SaltString::generate(OsRng {}).to_string();
       let password = state
-        .pw_hash_raw(&salt, &config.initial_user_password)
+        .pw_hash_raw(&salt, &config.auth.initial_user_password)
         .expect("Failed to hash initial password");
 
       let user = entity::user::Model {
         id: Uuid::new_v4(),
-        name: config.initial_user_username.clone(),
+        name: config.auth.initial_user_username.clone(),
         password,
         salt,
       };
@@ -108,7 +108,10 @@ impl PasswordState {
         .await
         .expect("Failed to create initial user");
 
-      info!("Initial user '{}' created", config.initial_user_username);
+      info!(
+        "Initial user '{}' created",
+        config.auth.initial_user_username
+      );
     } else {
       info!("Users already exist, skipping initial user creation");
     }

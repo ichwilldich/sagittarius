@@ -9,7 +9,10 @@ use dotenv::dotenv;
 use tokio::{fs, join};
 use tracing::info;
 
-use crate::{config::Config, macros::DualRouterExt};
+use crate::{
+  config::{AppConfig, EnvConfig},
+  macros::DualRouterExt,
+};
 
 mod auth;
 mod config;
@@ -24,7 +27,9 @@ async fn main() {
   #[cfg(debug_assertions)]
   dotenv().ok();
 
-  let config = Config::parse();
+  let c = crate::config::ui::SavedConfig::parse();
+  dbg!("cli config: {:?}", c);
+  let config = EnvConfig::parse();
   init_logging(&config.base);
   fs::create_dir_all(&config.storage_path)
     .await
@@ -34,15 +39,14 @@ async fn main() {
   let s3_listener = listener_setup(config.s3_port).await;
 
   let (app, s3) = (router(&config).await, s3_router(&config).await)
-    .state(&config)
-    .await
-    .layer(Extension(config));
+    .state(config)
+    .await;
 
   info!("Starting s3 sever");
   join!(run_app(app_listener, app), run_app(s3_listener, s3));
 }
 
-async fn router(config: &Config) -> Router {
+async fn router(config: &EnvConfig) -> Router {
   frontend::router()
     .nest(
       "/api",
@@ -54,26 +58,32 @@ async fn router(config: &Config) -> Router {
     .await
 }
 
-async fn s3_router(config: &Config) -> Router {
+async fn s3_router(config: &EnvConfig) -> Router {
   s3::router().add_base_layers(&config.base).await
 }
 
 router_extension!(
-  async fn state(self, config: &Config) -> Self {
+  async fn state(self, env_config: EnvConfig) -> Self {
     use auth::auth;
+    use config::config;
     use frontend::frontend;
     use s3::s3;
 
-    let db = db::init_db(config).await;
+    let db = db::init_db(&env_config).await;
+    let app_config = AppConfig::new(&db).await;
 
     self
-      .s3(config)
+      .s3(&env_config)
       .await
-      .auth(config, &db)
+      .auth(&env_config, &app_config, &db)
       .await
       .frontend()
       .await
+      .config(&db)
+      .await
       .layer(Extension(db))
+      .layer(Extension(env_config))
+      .layer(Extension(app_config))
   }
 );
 
@@ -88,6 +98,6 @@ mod test {
       std::env::set_var("DB_URL", "postgresql://test:test@localhost:5432/test");
     }
     // test if there are any handler setup error that are not caught at compile time
-    let _ = super::router(&super::Config::parse_from([""])).await;
+    let _ = super::router(&super::EnvConfig::parse_from([""])).await;
   }
 }

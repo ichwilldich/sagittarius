@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::{auth::jwt_auth::COOKIE_NAME, config::Config, db::Connection};
+use crate::{auth::jwt_auth::COOKIE_NAME, config::EnvConfig, db::Connection};
 
 const JWT_KEY_NAME: &str = "jwt";
 
@@ -70,7 +70,7 @@ impl JwtState {
     Ok(token_data.claims)
   }
 
-  pub async fn init(config: &Config, db: &Connection) -> Self {
+  pub async fn init(config: &EnvConfig, db: &Connection) -> Self {
     let (key, kid) = if let Ok(key) = db.key().get_key_by_name(JWT_KEY_NAME.into()).await {
       (key.private_key, key.id.to_string())
     } else {
@@ -113,8 +113,8 @@ impl JwtState {
       encoding_key,
       decoding_key,
       validation,
-      exp: config.jwt_exp,
-      iss: config.jwt_iss.clone(),
+      exp: config.auth.jwt_exp,
+      iss: config.auth.jwt_iss.clone(),
     }
   }
 }
