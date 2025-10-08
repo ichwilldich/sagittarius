@@ -15,7 +15,6 @@
   let { children }: Props = $props();
 
   const noLayout = ['/login', '/oauth', '/oauth/logout'];
-  $inspect(page.url.pathname).with(console.log);
 </script>
 
 <ModeWatcher />
