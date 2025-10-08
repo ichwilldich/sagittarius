@@ -191,7 +191,7 @@ async fn oidc_url(
 
     let req = config
       .client
-      .get(config.authorization_endpoint.clone())
+      .post(config.authorization_endpoint.clone())
       .form(&form)
       .build()?;
 

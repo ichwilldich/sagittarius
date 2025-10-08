@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Card, Switch } from 'positron-components/components/ui';
+  import { Button, Card, toast } from 'positron-components/components/ui';
   import {
     BaseForm,
     FormInput,
@@ -17,13 +17,41 @@
     SSOType,
     type SSOConfig
   } from '$lib/backend/sso.svelte';
+  import { browser } from '$app/environment';
+  import { page } from '$app/state';
 
   const { data }: { data: PageServerData } = $props();
 
+  let sso_error: string | null = $derived(page.url.searchParams.get('error'));
   let sso_config: SSOConfig | undefined = $state();
   let sso_loading = $state(false);
   get_sso_config().then((config) => {
     sso_config = config;
+    if (
+      sso_config?.instant_redirect &&
+      sso_config.sso_type !== SSOType.None &&
+      browser &&
+      !sso_error
+    ) {
+      sso_login();
+    }
+  });
+
+  $effect(() => {
+    if (sso_error) {
+      let error = '';
+      switch (sso_error) {
+        case 'missing_code':
+          error = 'SSO login failed: Missing authorization code.';
+          break;
+        case 'oidc_not_configured':
+          error = 'SSO login failed: OIDC is not configured.';
+          break;
+        default:
+          error = `SSO login failed: ${sso_error}`;
+      }
+      toast.error(error);
+    }
   });
 
   const loginForm = {
