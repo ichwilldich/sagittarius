@@ -31,7 +31,7 @@ pub struct JwtClaims {
   pub r#type: AuthType,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum AuthType {
   Oidc,
   Internal,
@@ -54,7 +54,7 @@ impl JwtState {
     r#type: AuthType,
   ) -> Result<Cookie<'c>> {
     let exp = Utc::now()
-      .checked_sub_signed(Duration::seconds(self.exp))
+      .checked_add_signed(Duration::seconds(self.exp))
       .context("invalid timestamp")?
       .timestamp();
 

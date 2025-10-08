@@ -16,9 +16,10 @@ use jsonwebtoken::{
   DecodingKey, Validation,
   jwk::{AlgorithmParameters, JwkSet},
 };
-use reqwest::{Client, multipart::Form, redirect::Policy};
+use reqwest::{Client, redirect::Policy};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
+use tracing::info;
 use url::Url;
 use uuid::Uuid;
 
@@ -55,6 +56,7 @@ pub(super) struct OidcConfig {
   client_id: String,
   client_secret: String,
   client: Client,
+  scope: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -72,8 +74,25 @@ impl OidcState {
       && let Some(client_id) = app_config.config.oidc.oidc_client_id.value()
       && let Some(client_secret) = app_config.config.oidc.oidc_client_secret.value()
     {
-      let config: OidcConfiguration = reqwest::get(url.clone()).await?.json().await?;
-      let jwk_set: JwkSet = reqwest::get(config.jwks_uri).await?.json().await?;
+      info!("Configuring OIDC with URL: {}", url);
+      let res = reqwest::get(url.clone()).await?;
+      if !res.status().is_success() {
+        let body = res.text().await.unwrap_or_default();
+        bail!(
+          "Failed to retrieve OIDC configuration from {}: {}",
+          url,
+          body
+        );
+      }
+      let config: OidcConfiguration = res.json().await?;
+
+      info!("Retrieving JWKs from: {}", config.jwks_uri);
+      let res = reqwest::get(config.jwks_uri.clone()).await?;
+      if !res.status().is_success() {
+        let body = res.text().await.unwrap_or_default();
+        bail!("Failed to retrieve JWKs from {}: {}", config.jwks_uri, body);
+      }
+      let jwk_set: JwkSet = res.json().await?;
 
       let client = Client::builder().redirect(Policy::none()).build()?;
 
@@ -88,6 +107,7 @@ impl OidcState {
         client_id: client_id.clone(),
         client_secret: client_secret.clone(),
         client,
+        scope: app_config.config.oidc.oidc_scope.value().cloned(),
       })
     } else {
       None
@@ -159,22 +179,31 @@ async fn oidc_url(
     let state = Uuid::new_v4();
     let nonce = Uuid::new_v4();
 
-    let form = Form::new()
-      .text("response_type", "code")
-      .text("client_id", config.client_id.clone())
-      .text("state", state.to_string())
-      .text("nonce", nonce.to_string());
+    let mut form = HashMap::new();
+    form.insert("response_type", "code".to_string());
+    form.insert("client_id", config.client_id.clone());
+    form.insert("state", state.to_string());
+    form.insert("nonce", nonce.to_string());
+
+    if let Some(scope) = &config.scope {
+      form.insert("scope", scope.clone());
+    }
 
     let req = config
       .client
-      .post(config.authorization_endpoint.clone())
-      .multipart(form)
+      .get(config.authorization_endpoint.clone())
+      .form(&form)
       .build()?;
 
     let res = config.client.execute(req).await?;
 
     if !res.status().is_redirection() {
-      bail!(INTERNAL_SERVER_ERROR, "OIDC authorization request failed");
+      let body = res.text().await.unwrap_or_default();
+      bail!(
+        INTERNAL_SERVER_ERROR,
+        "OIDC authorization request failed: {}",
+        body
+      );
     }
     let Some(location) = res.headers().get(LOCATION).and_then(|h| h.to_str().ok()) else {
       bail!(
@@ -248,18 +277,24 @@ async fn oidc_callback(
     if let Some(error) = error {
       ("/login", Some(error))
     } else if let Some(code) = code {
-      let form = Form::new()
-        .text("grant_type", "authorization_code")
-        .text("code", code);
+      let mut form = HashMap::new();
+      form.insert("grant_type", "authorization_code".to_string());
+      form.insert("code", code);
 
       let req = config
         .client
         .post(config.token_endpoint.clone())
         .basic_auth(config.client_id.clone(), Some(config.client_secret.clone()))
-        .multipart(form)
+        .form(&form)
         .build()?;
 
-      let res: TokenRes = config.client.execute(req).await?.json().await?;
+      let res = config.client.execute(req).await?;
+      if !res.status().is_success() {
+        let body = res.text().await.unwrap_or_default();
+        bail!(INTERNAL_SERVER_ERROR, "OIDC token request failed: {}", body);
+      }
+
+      let res: TokenRes = res.json().await?;
       config.validate_jwk(&res.id_token).await?;
 
       let req = config
@@ -267,7 +302,17 @@ async fn oidc_callback(
         .get(config.userinfo_endpoint.clone())
         .bearer_auth(res.id_token)
         .build()?;
-      let res: AuthInfo = config.client.execute(req).await?.json().await?;
+
+      let res = config.client.execute(req).await?;
+      if !res.status().is_success() {
+        let body = res.text().await.unwrap_or_default();
+        bail!(
+          INTERNAL_SERVER_ERROR,
+          "OIDC userinfo request failed: {}",
+          body
+        );
+      }
+      let res: AuthInfo = res.json().await?;
 
       cookies = cookies.add(jwt.create_token::<AllAuth>(res.sub, AuthType::Oidc)?);
 

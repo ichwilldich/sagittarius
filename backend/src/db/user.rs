@@ -41,4 +41,10 @@ impl<'db> UserTable<'db> {
 
     Ok(res)
   }
+
+  pub async fn delete_user(&self, id: Uuid) -> Result<(), sea_orm::DbErr> {
+    entity::user::Entity::delete_by_id(id).exec(self.db).await?;
+
+    Ok(())
+  }
 }

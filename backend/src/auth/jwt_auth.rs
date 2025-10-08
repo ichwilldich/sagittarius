@@ -13,12 +13,19 @@ use centaurus::{bail, error::ErrorReport};
 use http::request::Parts;
 use uuid::Uuid;
 
-use crate::{auth::jwt_state::JwtState, db::Connection};
+use crate::{
+  auth::jwt_state::{AuthType, JwtState},
+  db::Connection,
+};
 
 pub const COOKIE_NAME: &str = "auth_token";
 
 pub trait AuthSource {
   type UserID: FromStr + ToString;
+
+  fn internal() -> bool {
+    false
+  }
 }
 
 pub struct AllAuth;
@@ -29,6 +36,10 @@ impl AuthSource for AllAuth {
 pub struct InternalAuth;
 impl AuthSource for InternalAuth {
   type UserID = Uuid;
+
+  fn internal() -> bool {
+    true
+  }
 }
 
 pub struct JwtAuth<T: AuthSource = AllAuth> {
@@ -70,6 +81,10 @@ impl<S: Sync, T: AuthSource> FromRequestParts<S> for JwtAuth<T> {
     let Ok(user_id) = T::UserID::from_str(&claims.sub) else {
       bail!(UNAUTHORIZED, "invalid user id in token");
     };
+
+    if T::internal() && claims.r#type != AuthType::Internal {
+      bail!(UNAUTHORIZED, "token is not for internal use");
+    }
 
     Ok(JwtAuth {
       user_id,

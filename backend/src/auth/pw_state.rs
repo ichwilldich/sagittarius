@@ -103,6 +103,18 @@ impl PasswordState {
         salt,
       };
 
+      if let Ok(user) = db.user().get_user_by_name(user.name.clone()).await {
+        db.user()
+          .delete_user(user.id)
+          .await
+          .expect("Failed to overwrite initial user");
+
+        info!(
+          "Initial user '{}' deleted",
+          config.auth.initial_user_username
+        );
+      }
+
       db.user()
         .create_user(user)
         .await

@@ -25,6 +25,8 @@ pub struct SSOConfig {
   oidc_client_secret: Option<String>,
   #[clap(long, env)]
   oidc_url: Option<Url>,
+  #[clap(long, env)]
+  oidc_scope: Option<String>,
 }
 
 #[derive(Clone)]
@@ -33,6 +35,7 @@ pub struct MergedSSOConfig {
   pub oidc_client_id: ConfigValue<String>,
   pub oidc_client_secret: ConfigValue<String>,
   pub oidc_url: ConfigValue<Url>,
+  pub oidc_scope: ConfigValue<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -89,6 +92,7 @@ impl SSOConfig {
       oidc_client_id: ConfigValue::from_value(ui.oidc_client_id, self.oidc_client_id),
       oidc_client_secret: ConfigValue::from_value(ui.oidc_client_secret, self.oidc_client_secret),
       oidc_url: ConfigValue::from_value(ui.oidc_url, self.oidc_url),
+      oidc_scope: ConfigValue::from_value(ui.oidc_scope, self.oidc_scope),
     }
   }
 }
@@ -100,6 +104,7 @@ impl MergedSSOConfig {
       oidc_client_id: self.oidc_client_id.value().cloned(),
       oidc_client_secret: self.oidc_client_secret.value().cloned(),
       oidc_url: self.oidc_url.value().cloned(),
+      oidc_scope: self.oidc_scope.value().cloned(),
     }
   }
 }
