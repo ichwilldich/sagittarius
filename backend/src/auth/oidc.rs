@@ -40,11 +40,11 @@ pub fn router() -> Router {
 
 #[derive(Clone, FromReqExtension)]
 pub struct OidcState {
-  config: Option<OidcConfig>,
+  pub(super) config: Option<OidcConfig>,
 }
 
 #[derive(Clone)]
-struct OidcConfig {
+pub(super) struct OidcConfig {
   state: Arc<Mutex<HashSet<Uuid>>>,
   nonce: Arc<Mutex<HashSet<Uuid>>>,
   issuer: String,
@@ -147,7 +147,7 @@ impl OidcConfig {
 
 #[derive(Serialize)]
 struct OidcResponse {
-  url: Option<String>,
+  url: String,
 }
 
 async fn oidc_url(
@@ -155,7 +155,7 @@ async fn oidc_url(
   jwt: JwtState,
   mut cookies: CookieJar,
 ) -> Result<(CookieJar, Json<OidcResponse>)> {
-  let url = if let Some(config) = &state.config {
+  if let Some(config) = &state.config {
     let state = Uuid::new_v4();
     let nonce = Uuid::new_v4();
 
@@ -188,12 +188,15 @@ async fn oidc_url(
 
     config.nonce.lock().await.insert(nonce);
 
-    Some(location.to_string())
+    Ok((
+      cookies,
+      Json(OidcResponse {
+        url: location.to_string(),
+      }),
+    ))
   } else {
-    None
-  };
-
-  Ok((cookies, Json(OidcResponse { url })))
+    bail!(BAD_REQUEST, "OIDC not configured");
+  }
 }
 
 #[derive(Deserialize)]

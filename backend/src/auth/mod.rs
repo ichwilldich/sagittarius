@@ -1,4 +1,5 @@
-use axum::{Extension, Router};
+use axum::{Extension, Json, Router, routing::get};
+use serde::Serialize;
 
 use crate::{
   auth::{
@@ -26,6 +27,7 @@ pub fn router() -> Router {
     .merge(login::router())
     .merge(logout::router())
     .merge(oidc::router())
+    .route("/sso_config", get(get_sso_type))
 }
 
 router_extension!(
@@ -46,3 +48,34 @@ router_extension!(
       ))
   }
 );
+
+#[derive(Serialize)]
+enum SSOType {
+  Oidc,
+  None,
+}
+
+#[derive(Serialize)]
+struct SSOConfig {
+  sso_type: SSOType,
+  instant_redirect: bool,
+}
+
+async fn get_sso_type(oidc: OidcState, config: AppConfig) -> Json<SSOConfig> {
+  let sso_type = if oidc.config.is_some() {
+    SSOType::Oidc
+  } else {
+    SSOType::None
+  };
+
+  Json(SSOConfig {
+    sso_type,
+    instant_redirect: config
+      .config
+      .oidc
+      .sso_instant_redirect
+      .value()
+      .cloned()
+      .unwrap_or(true),
+  })
+}

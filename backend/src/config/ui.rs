@@ -6,16 +6,19 @@ use url::Url;
 pub struct SavedConfig {
   #[serde(default)]
   #[clap(flatten)]
-  pub oidc: OidcConfig,
+  pub oidc: SSOConfig,
 }
 
 #[derive(Clone)]
 pub struct MergedConfig {
-  pub oidc: MergedOidcConfig,
+  pub oidc: MergedSSOConfig,
 }
 
 #[derive(Serialize, Deserialize, Default, Args, Clone, Debug)]
-pub struct OidcConfig {
+pub struct SSOConfig {
+  #[clap(long, env)]
+  sso_instant_redirect: Option<bool>,
+
   #[clap(long, env)]
   oidc_client_id: Option<String>,
   #[clap(long, env)]
@@ -25,7 +28,8 @@ pub struct OidcConfig {
 }
 
 #[derive(Clone)]
-pub struct MergedOidcConfig {
+pub struct MergedSSOConfig {
+  pub sso_instant_redirect: ConfigValue<bool>,
   pub oidc_client_id: ConfigValue<String>,
   pub oidc_client_secret: ConfigValue<String>,
   pub oidc_url: ConfigValue<Url>,
@@ -75,9 +79,13 @@ impl MergedConfig {
   }
 }
 
-impl OidcConfig {
-  pub(crate) fn merge(self, ui: Self) -> MergedOidcConfig {
-    MergedOidcConfig {
+impl SSOConfig {
+  pub(crate) fn merge(self, ui: Self) -> MergedSSOConfig {
+    MergedSSOConfig {
+      sso_instant_redirect: ConfigValue::from_value(
+        ui.sso_instant_redirect,
+        self.sso_instant_redirect,
+      ),
       oidc_client_id: ConfigValue::from_value(ui.oidc_client_id, self.oidc_client_id),
       oidc_client_secret: ConfigValue::from_value(ui.oidc_client_secret, self.oidc_client_secret),
       oidc_url: ConfigValue::from_value(ui.oidc_url, self.oidc_url),
@@ -85,9 +93,10 @@ impl OidcConfig {
   }
 }
 
-impl MergedOidcConfig {
-  pub(super) fn to_ui(&self) -> OidcConfig {
-    OidcConfig {
+impl MergedSSOConfig {
+  pub(super) fn to_ui(&self) -> SSOConfig {
+    SSOConfig {
+      sso_instant_redirect: self.sso_instant_redirect.value().cloned(),
       oidc_client_id: self.oidc_client_id.value().cloned(),
       oidc_client_secret: self.oidc_client_secret.value().cloned(),
       oidc_url: self.oidc_url.value().cloned(),
