@@ -9,6 +9,7 @@ use axum::{
   response::{IntoResponse, Response},
   routing::get,
 };
+use axum_extra::extract::{CookieJar, cookie::Cookie};
 use centaurus::{FromReqExtension, bail, error::Result};
 use http::{StatusCode, header::LOCATION};
 use jsonwebtoken::{
@@ -21,7 +22,15 @@ use tokio::sync::Mutex;
 use url::Url;
 use uuid::Uuid;
 
-use crate::config::AppConfig;
+use crate::{
+  auth::{
+    jwt_auth::AllAuth,
+    jwt_state::{AuthType, JwtState},
+  },
+  config::{AppConfig, EnvConfig},
+};
+
+pub const OIDC_STATE: &str = "oidc_state";
 
 pub fn router() -> Router {
   Router::new()
@@ -141,8 +150,11 @@ struct OidcResponse {
   url: Option<String>,
 }
 
-#[axum::debug_handler]
-async fn oidc_url(state: OidcState) -> Result<Json<OidcResponse>> {
+async fn oidc_url(
+  state: OidcState,
+  jwt: JwtState,
+  mut cookies: CookieJar,
+) -> Result<(CookieJar, Json<OidcResponse>)> {
   let url = if let Some(config) = &state.config {
     let state = Uuid::new_v4();
     let nonce = Uuid::new_v4();
@@ -172,6 +184,8 @@ async fn oidc_url(state: OidcState) -> Result<Json<OidcResponse>> {
     };
 
     config.state.lock().await.insert(state);
+    cookies = cookies.add(jwt.create_cookie(OIDC_STATE, state.to_string()));
+
     config.nonce.lock().await.insert(nonce);
 
     Some(location.to_string())
@@ -179,74 +193,92 @@ async fn oidc_url(state: OidcState) -> Result<Json<OidcResponse>> {
     None
   };
 
-  Ok(Json(OidcResponse { url }))
+  Ok((cookies, Json(OidcResponse { url })))
 }
 
 #[derive(Deserialize)]
 struct OidcCallbackQuery {
-  code: String,
+  code: Option<String>,
   state: Uuid,
+  error: Option<String>,
 }
 
 struct Redirect {
-  location: String,
+  location: Url,
 }
 
 impl IntoResponse for Redirect {
   fn into_response(self) -> Response {
-    (StatusCode::FOUND, [(LOCATION, self.location)]).into_response()
+    (StatusCode::FOUND, [(LOCATION, self.location.to_string())]).into_response()
   }
 }
 
 #[derive(Deserialize)]
 struct TokenRes {
-  access_token: String,
+  id_token: String,
 }
 
 #[derive(Deserialize)]
 pub struct AuthInfo {
-  pub sub: Uuid,
-  pub exp: i64,
-  pub preferred_username: String,
+  pub sub: String,
 }
 
 async fn oidc_callback(
-  Query(OidcCallbackQuery { code, state }): Query<OidcCallbackQuery>,
+  Query(OidcCallbackQuery { code, state, error }): Query<OidcCallbackQuery>,
   oidc_state: OidcState,
-) -> Result<Redirect> {
-  let base = "";
-  if let Some(config) = &oidc_state.config {
+  mut cookies: CookieJar,
+  config: EnvConfig,
+  jwt: JwtState,
+) -> Result<(CookieJar, Redirect)> {
+  let (path, error) = if let Some(config) = &oidc_state.config {
     if !config.state.lock().await.remove(&state) {
-      bail!(INTERNAL_SERVER_ERROR, "Invalid OIDC state");
+      bail!(BAD_REQUEST, "Invalid OIDC state");
     }
+    let Some(cookie) = cookies.get(OIDC_STATE) else {
+      bail!(BAD_REQUEST, "Missing OIDC state cookie");
+    };
+    if cookie.value() != state.to_string() {
+      bail!(BAD_REQUEST, "OIDC state mismatch");
+    }
+    cookies = cookies.remove(Cookie::from(OIDC_STATE));
 
-    let form = Form::new()
-      .text("grant_type", "authorization_code")
-      .text("code", code);
+    if let Some(error) = error {
+      ("/login", Some(error))
+    } else if let Some(code) = code {
+      let form = Form::new()
+        .text("grant_type", "authorization_code")
+        .text("code", code);
 
-    let req = config
-      .client
-      .post(config.token_endpoint.clone())
-      .basic_auth(config.client_id.clone(), Some(config.client_secret.clone()))
-      .multipart(form)
-      .build()?;
+      let req = config
+        .client
+        .post(config.token_endpoint.clone())
+        .basic_auth(config.client_id.clone(), Some(config.client_secret.clone()))
+        .multipart(form)
+        .build()?;
 
-    let res: TokenRes = config.client.execute(req).await?.json().await?;
-    config.validate_jwk(&res.access_token).await?;
+      let res: TokenRes = config.client.execute(req).await?.json().await?;
+      config.validate_jwk(&res.id_token).await?;
 
-    let req = config
-      .client
-      .get(config.userinfo_endpoint.clone())
-      .bearer_auth(res.access_token)
-      .build()?;
-    let res: AuthInfo = config.client.execute(req).await?.json().await?;
+      let req = config
+        .client
+        .get(config.userinfo_endpoint.clone())
+        .bearer_auth(res.id_token)
+        .build()?;
+      let res: AuthInfo = config.client.execute(req).await?.json().await?;
 
-    Ok(Redirect {
-      location: format!("{base}/"),
-    })
+      cookies = cookies.add(jwt.create_token::<AllAuth>(res.sub, AuthType::Oidc)?);
+
+      ("/", None)
+    } else {
+      ("/login", Some("missing_code".to_string()))
+    }
   } else {
-    Ok(Redirect {
-      location: format!("{base}/login?error=OIDC not configured"),
-    })
-  }
+    ("/login", Some("oidc_not_configured".to_string()))
+  };
+
+  let mut url = config.base_url;
+  url.set_path(path);
+  url.set_query(error.map(|e| format!("error={e}")).as_deref());
+
+  Ok((cookies, Redirect { location: url }))
 }

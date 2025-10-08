@@ -15,7 +15,11 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::{auth::jwt_auth::COOKIE_NAME, config::EnvConfig, db::Connection};
+use crate::{
+  auth::jwt_auth::{AuthSource, COOKIE_NAME},
+  config::EnvConfig,
+  db::Connection,
+};
 
 const JWT_KEY_NAME: &str = "jwt";
 
@@ -23,7 +27,14 @@ const JWT_KEY_NAME: &str = "jwt";
 pub struct JwtClaims {
   pub exp: i64,
   pub iss: String,
-  pub sub: Uuid,
+  pub sub: String,
+  pub r#type: AuthType,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum AuthType {
+  Oidc,
+  Internal,
 }
 
 #[derive(FromReqExtension, Clone)]
@@ -37,7 +48,11 @@ pub struct JwtState {
 }
 
 impl JwtState {
-  pub fn create_token<'c>(&self, uuid: Uuid) -> Result<Cookie<'c>> {
+  pub fn create_token<'c, T: AuthSource>(
+    &self,
+    uuid: T::UserID,
+    r#type: AuthType,
+  ) -> Result<Cookie<'c>> {
     let exp = Utc::now()
       .checked_sub_signed(Duration::seconds(self.exp))
       .context("invalid timestamp")?
@@ -46,16 +61,17 @@ impl JwtState {
     let claims = JwtClaims {
       exp,
       iss: self.iss.clone(),
-      sub: uuid,
+      sub: uuid.to_string(),
+      r#type,
     };
 
     let token = encode(&self.header, &claims, &self.encoding_key)?;
 
-    Ok(self.create_cookie(token))
+    Ok(self.create_cookie(COOKIE_NAME, token))
   }
 
-  pub fn create_cookie<'c>(&self, token: String) -> Cookie<'c> {
-    Cookie::build((COOKIE_NAME, token))
+  pub fn create_cookie<'c>(&self, key: &'c str, token: String) -> Cookie<'c> {
+    Cookie::build((key, token))
       .http_only(true)
       .max_age(time::Duration::seconds(self.exp))
       .same_site(SameSite::Lax)

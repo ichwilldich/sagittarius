@@ -60,7 +60,7 @@ impl<T> ConfigValue<T> {
 }
 
 impl SavedConfig {
-  pub fn merge(self, ui: Self) -> MergedConfig {
+  pub(crate) fn merge(self, ui: Self) -> MergedConfig {
     MergedConfig {
       oidc: self.oidc.merge(ui.oidc),
     }
@@ -68,7 +68,7 @@ impl SavedConfig {
 }
 
 impl MergedConfig {
-  pub fn to_ui(&self) -> SavedConfig {
+  pub(super) fn to_ui(&self) -> SavedConfig {
     SavedConfig {
       oidc: self.oidc.to_ui(),
     }
@@ -76,7 +76,7 @@ impl MergedConfig {
 }
 
 impl OidcConfig {
-  pub fn merge(self, ui: Self) -> MergedOidcConfig {
+  pub(crate) fn merge(self, ui: Self) -> MergedOidcConfig {
     MergedOidcConfig {
       oidc_client_id: ConfigValue::from_value(ui.oidc_client_id, self.oidc_client_id),
       oidc_client_secret: ConfigValue::from_value(ui.oidc_client_secret, self.oidc_client_secret),
@@ -86,7 +86,7 @@ impl OidcConfig {
 }
 
 impl MergedOidcConfig {
-  pub fn to_ui(&self) -> OidcConfig {
+  pub(super) fn to_ui(&self) -> OidcConfig {
     OidcConfig {
       oidc_client_id: self.oidc_client_id.value().cloned(),
       oidc_client_secret: self.oidc_client_secret.value().cloned(),

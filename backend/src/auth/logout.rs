@@ -1,14 +1,13 @@
 use axum::{Router, routing::post};
-use axum_extra::extract::CookieJar;
+use axum_extra::extract::{CookieJar, cookie::Cookie};
 use centaurus::error::Result;
 use chrono::DateTime;
 use eyre::ContextCompat;
-use time::Duration;
 
 use crate::{
   auth::{
     jwt_auth::{COOKIE_NAME, JwtAuth},
-    jwt_state::{JwtInvalidState, JwtState},
+    jwt_state::JwtInvalidState,
     res::TokenRes,
   },
   db::Connection,
@@ -23,11 +22,7 @@ async fn logout(
   db: Connection,
   mut cookies: CookieJar,
   state: JwtInvalidState,
-  jwt: JwtState,
 ) -> Result<(CookieJar, TokenRes)> {
-  let mut reset_cookie = jwt.create_cookie(COOKIE_NAME.to_string());
-  reset_cookie.set_max_age(Duration::seconds(0));
-
   let cookie = cookies.get(COOKIE_NAME).context("Missing auth cookie")?;
   let mut count = state.count.lock().await;
 
@@ -39,7 +34,7 @@ async fn logout(
     )
     .await?;
 
-  cookies = cookies.remove(reset_cookie);
+  cookies = cookies.remove(Cookie::from(COOKIE_NAME));
 
   Ok((cookies, TokenRes))
 }

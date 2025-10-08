@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use centaurus::{FromReqExtension, config::BaseConfig};
 use clap::{Args, Parser};
+use url::Url;
 
 use crate::s3::storage::StorageType;
 
@@ -13,6 +14,9 @@ pub struct EnvConfig {
   pub db: DBConfig,
   #[command(flatten)]
   pub auth: AuthConfig,
+
+  #[clap(long, env, default_value = "http://localhost:8080")]
+  pub base_url: Url,
 
   // storage
   #[clap(long, env, default_value = "no-raid")]

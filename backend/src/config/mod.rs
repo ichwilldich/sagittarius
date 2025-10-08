@@ -40,6 +40,7 @@ impl AppConfig {
     }
   }
 
+  #[allow(unused)]
   pub async fn save_config(&self, db: &Connection, config: &MergedConfig) -> Result<()> {
     let config = config.to_ui();
     db.config().save_config(&config).await?;

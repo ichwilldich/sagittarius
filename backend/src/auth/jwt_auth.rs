@@ -1,3 +1,5 @@
+use std::{marker::PhantomData, str::FromStr};
+
 use axum::{
   RequestPartsExt,
   extract::{FromRequestParts, OptionalFromRequestParts},
@@ -15,12 +17,27 @@ use crate::{auth::jwt_state::JwtState, db::Connection};
 
 pub const COOKIE_NAME: &str = "auth_token";
 
-pub struct JwtAuth {
-  pub user_id: Uuid,
-  pub exp: i64,
+pub trait AuthSource {
+  type UserID: FromStr + ToString;
 }
 
-impl<S: Sync> FromRequestParts<S> for JwtAuth {
+pub struct AllAuth;
+impl AuthSource for AllAuth {
+  type UserID = String;
+}
+
+pub struct InternalAuth;
+impl AuthSource for InternalAuth {
+  type UserID = Uuid;
+}
+
+pub struct JwtAuth<T: AuthSource = AllAuth> {
+  pub user_id: T::UserID,
+  pub exp: i64,
+  _m: PhantomData<T>,
+}
+
+impl<S: Sync, T: AuthSource> FromRequestParts<S> for JwtAuth<T> {
   type Rejection = ErrorReport;
 
   async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
@@ -50,10 +67,14 @@ impl<S: Sync> FromRequestParts<S> for JwtAuth {
     let Ok(claims) = state.validate_token(&token) else {
       bail!(UNAUTHORIZED, "invalid token");
     };
+    let Ok(user_id) = T::UserID::from_str(&claims.sub) else {
+      bail!(UNAUTHORIZED, "invalid user id in token");
+    };
 
     Ok(JwtAuth {
-      user_id: claims.sub,
+      user_id,
       exp: claims.exp,
+      _m: PhantomData,
     })
   }
 }

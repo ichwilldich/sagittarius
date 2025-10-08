@@ -27,8 +27,6 @@ async fn main() {
   #[cfg(debug_assertions)]
   dotenv().ok();
 
-  let c = crate::config::ui::SavedConfig::parse();
-  dbg!("cli config: {:?}", c);
   let config = EnvConfig::parse();
   init_logging(&config.base);
   fs::create_dir_all(&config.storage_path)
