@@ -46,6 +46,18 @@ impl S3Interface {
     let buckets = self.list_dir(&path!(BUCKET_DIR)).await?;
     Ok(buckets)
   }
+
+  pub async fn put_object(&self, bucket: &String, object: &String) -> Result<()> {
+    if !self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
+      bail!(NOT_FOUND, "Bucket {bucket} not found");
+    }
+
+    self
+      .write_file(&path!(BUCKET_DIR, bucket, object), &[])
+      .await?;
+
+    Ok(())
+  }
 }
 
 impl Deref for S3Interface {
