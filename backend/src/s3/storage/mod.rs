@@ -10,6 +10,8 @@ use crate::s3::interface::S3Interface;
 
 pub mod no_raid;
 
+pub const TMP_DIR: &str = "tmp";
+
 #[async_trait::async_trait]
 pub trait Storage {
   async fn create_dir(&self, path: &Path) -> Result<()>;
