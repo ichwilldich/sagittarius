@@ -1,6 +1,5 @@
 use axum::Extension;
 use centaurus::{FromReqExtension, error::Result};
-use clap::Parser;
 
 pub use env::EnvConfig;
 

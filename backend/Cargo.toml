@@ -18,7 +18,7 @@ centaurus = { version = "0.2.3", features = [
   "sea-orm",
   "uuid",
   "reqwest",
-] }
+], git = "https://github.com/ProfiiDev/centaurus.git", branch = "feat/figment" }
 uuid = { version = "1.18.1", features = ["v4"] }
 axum = { version = "0.8.4", features = [
   "macros",
@@ -28,7 +28,6 @@ axum = { version = "0.8.4", features = [
 ] }
 axum-extra = { version = "0.10.1", features = ["cookie", "typed-header"] }
 tracing-subscriber = "=0.3.19"
-clap = { version = "4.5.47", features = ["derive", "env"] }
 tracing = "0.1.41"
 tower = "0.5.2"
 tower-http = { version = "0.6.6", features = ["fs"] }
@@ -66,6 +65,7 @@ reqwest = { version = "0.12.23", features = [
   "system-proxy",
   "multipart",
 ], default-features = false }
+figment = { version = "0.10.19", features = ["env", "toml"] }
 
 [[bin]]
 name = "backend"

@@ -1,12 +1,24 @@
-use clap::{Args, Parser};
+use figment::{
+  Figment,
+  providers::{Env, Serialized},
+};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Serialize, Deserialize, Default, Parser, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct SavedConfig {
   #[serde(default)]
-  #[clap(flatten)]
   pub oidc: SSOConfig,
+}
+
+impl SavedConfig {
+  pub fn parse() -> Self {
+    let config = Figment::new()
+      .merge(Serialized::defaults(Self::default()))
+      .merge(Env::raw().global());
+
+    config.extract().expect("failed to load configuration")
+  }
 }
 
 #[derive(Clone)]
@@ -14,18 +26,13 @@ pub struct MergedConfig {
   pub oidc: MergedSSOConfig,
 }
 
-#[derive(Serialize, Deserialize, Default, Args, Clone, Debug)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct SSOConfig {
-  #[clap(long, env)]
   sso_instant_redirect: Option<bool>,
 
-  #[clap(long, env)]
   oidc_client_id: Option<String>,
-  #[clap(long, env)]
   oidc_client_secret: Option<String>,
-  #[clap(long, env)]
   oidc_url: Option<Url>,
-  #[clap(long, env)]
   oidc_scope: Option<String>,
 }
 

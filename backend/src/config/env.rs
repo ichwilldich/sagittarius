@@ -1,210 +1,228 @@
 use std::path::PathBuf;
 
 use centaurus::{FromReqExtension, config::BaseConfig};
-use clap::{Args, Parser};
+use figment::{
+  Figment,
+  providers::{Env, Serialized},
+};
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::s3::storage::StorageType;
 
-#[derive(Parser, Clone, FromReqExtension)]
+#[derive(Deserialize, Serialize, Clone, FromReqExtension)]
 pub struct EnvConfig {
-  #[command(flatten)]
+  #[serde(flatten)]
   pub base: BaseConfig,
-  #[command(flatten)]
+  #[serde(flatten)]
   pub db: DBConfig,
-  #[command(flatten)]
+  #[serde(flatten)]
   pub auth: AuthConfig,
 
-  #[clap(long, env, default_value = "http://localhost:8080")]
   pub base_url: Url,
 
   // storage
-  #[clap(long, env, default_value = "no-raid")]
   pub storage_type: StorageType,
-  #[clap(long, env, default_value = "/data")]
   pub storage_path: PathBuf,
 
   // s3
-  #[clap(long, env, default_value = "9000")]
   pub s3_port: u16,
 }
 
-#[derive(Args, Clone)]
+impl EnvConfig {
+  pub fn parse() -> Self {
+    let config = Figment::new()
+      .merge(Serialized::defaults(Self::default()))
+      .merge(Env::raw().global());
+
+    config.extract().expect("failed to load configuration")
+  }
+}
+
+impl Default for EnvConfig {
+  fn default() -> Self {
+    Self {
+      base: BaseConfig::default(),
+      db: DBConfig::default(),
+      auth: AuthConfig::default(),
+      base_url: Url::parse("http://localhost:8080").unwrap(),
+      storage_type: StorageType::NoRaid,
+      storage_path: PathBuf::from("/data"),
+      s3_port: 9000,
+    }
+  }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct DBConfig {
-  #[clap(long, env, default_value = "1024")]
   pub database_max_connections: u32,
-  #[clap(long, env, default_value = "1")]
   pub database_min_connections: u32,
-  #[clap(long, env, default_value = "5")]
   pub database_connect_timeout: u64,
-  #[clap(long, env, default_value = "false")]
   pub database_logging: bool,
 }
 
-#[derive(Args, Clone)]
+impl Default for DBConfig {
+  fn default() -> Self {
+    Self {
+      database_max_connections: 1024,
+      database_min_connections: 1,
+      database_connect_timeout: 5,
+      database_logging: false,
+    }
+  }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct AuthConfig {
   // jwt
-  #[clap(long, env, default_value = "sagittarius")]
   pub jwt_iss: String,
-  #[clap(long, env, default_value = "604800")]
   pub jwt_exp: i64,
 
   // auth
-  #[clap(long, env, default_value = "sagittarius_pepper_123456")]
   pub auth_pepper: String,
 
   // initial user
-  #[clap(long, env, default_value = "admin")]
   pub initial_user_username: String,
-  #[clap(long, env, default_value = "admin")]
   pub initial_user_password: String,
-  #[clap(long, env, default_value = "false")]
   pub overwrite_initial_user: bool,
+}
+
+impl Default for AuthConfig {
+  fn default() -> Self {
+    Self {
+      jwt_iss: "sagittarius".to_string(),
+      jwt_exp: 604800,
+      auth_pepper: "sagittarius_pepper_123456".to_string(),
+      initial_user_username: "admin".to_string(),
+      initial_user_password: "admin".to_string(),
+      overwrite_initial_user: false,
+    }
+  }
 }
 
 #[cfg(test)]
 mod test {
   use super::*;
-  use clap::CommandFactory;
 
-  fn base_vars() {
+  fn config() -> EnvConfig {
     unsafe {
-      std::env::set_var("STORAGE_PATH", "/tmp/s3");
-      std::env::set_var("DB_URL", "postgresql://test:test@localhost:5432/test");
+      std::env::set_var("STORAGE_PATH", "/tmp/s3_");
     }
-  }
 
-  #[test]
-  fn test_verify_config() {
-    EnvConfig::command().debug_assert();
+    EnvConfig::parse()
   }
 
   #[test]
   fn test_storage_type() {
-    base_vars();
     unsafe {
-      std::env::set_var("STORAGE_TYPE", "no-raid");
+      std::env::set_var("STORAGE_TYPE", "NoRaid");
     }
-    // it fails when doing Config::parse() because there is some "--exact" arg
-    let cfg = EnvConfig::parse_from([""]);
+    let cfg = config();
     assert_eq!(cfg.storage_type, StorageType::NoRaid);
   }
 
   #[test]
   fn test_storage_path() {
-    base_vars();
-    // it fails when doing Config::parse() because there is some "--exact" arg
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.storage_path, PathBuf::from("/tmp/s3"));
+    let cfg = config();
+    assert_eq!(cfg.storage_path, PathBuf::from("/tmp/s3_"));
   }
 
   #[test]
   fn test_s3_port() {
-    base_vars();
     unsafe {
-      std::env::set_var("S3_PORT", "9000");
+      std::env::set_var("S3_PORT", "9010");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.s3_port, 9000);
+    let cfg = config();
+    assert_eq!(cfg.s3_port, 9010);
   }
 
   #[test]
   fn test_database_max_connections() {
-    base_vars();
     unsafe {
-      std::env::set_var("DATABASE_MAX_CONNECTIONS", "1024");
+      std::env::set_var("DATABASE_MAX_CONNECTIONS", "1023");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.db.database_max_connections, 1024);
+    let cfg = config();
+    assert_eq!(cfg.db.database_max_connections, 1023);
   }
 
   #[test]
   fn test_database_min_connections() {
-    base_vars();
     unsafe {
-      std::env::set_var("DATABASE_MIN_CONNECTIONS", "1");
+      std::env::set_var("DATABASE_MIN_CONNECTIONS", "2");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.db.database_min_connections, 1);
+    let cfg = config();
+    assert_eq!(cfg.db.database_min_connections, 2);
   }
 
   #[test]
   fn test_database_connect_timeout() {
-    base_vars();
     unsafe {
-      std::env::set_var("DATABASE_CONNECT_TIMEOUT", "5");
+      std::env::set_var("DATABASE_CONNECT_TIMEOUT", "6");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.db.database_connect_timeout, 5);
+    let cfg = config();
+    assert_eq!(cfg.db.database_connect_timeout, 6);
   }
 
   #[test]
   fn test_database_logging() {
-    base_vars();
     unsafe {
-      std::env::set_var("DATABASE_LOGGING", "false");
+      std::env::set_var("DATABASE_LOGGING", "true");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert!(!cfg.db.database_logging);
+    let cfg = config();
+    assert!(cfg.db.database_logging);
   }
 
   #[test]
   fn test_jwt_iss() {
-    base_vars();
     unsafe {
-      std::env::set_var("JWT_ISS", "my_iss");
+      std::env::set_var("JWT_ISS", "sagittarius_iss");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.auth.jwt_iss, "my_iss");
+    let cfg = config();
+    assert_eq!(cfg.auth.jwt_iss, "sagittarius_iss");
   }
 
   #[test]
   fn test_jwt_exp() {
-    base_vars();
     unsafe {
-      std::env::set_var("JWT_EXP", "604800");
+      std::env::set_var("JWT_EXP", "604810");
     }
-    let cfg = EnvConfig::parse_from([""]);
-    assert_eq!(cfg.auth.jwt_exp, 604800);
+    let cfg = config();
+    assert_eq!(cfg.auth.jwt_exp, 604810);
   }
 
   #[test]
   fn test_auth_pepper() {
-    base_vars();
     unsafe {
       std::env::set_var("AUTH_PEPPER", "_my_pepper__22_123");
     }
-    let cfg = EnvConfig::parse_from([""]);
+    let cfg = config();
     assert_eq!(cfg.auth.auth_pepper, "_my_pepper__22_123");
   }
 
   #[test]
   fn test_initial_user_username() {
-    base_vars();
     unsafe {
       std::env::set_var("INITIAL_USER_USERNAME", "admin123");
     }
-    let cfg = EnvConfig::parse_from([""]);
+    let cfg = config();
     assert_eq!(cfg.auth.initial_user_username, "admin123");
   }
 
   #[test]
   fn test_initial_user_password() {
-    base_vars();
     unsafe {
       std::env::set_var("INITIAL_USER_PASSWORD", "admin123");
     }
-    let cfg = EnvConfig::parse_from([""]);
+    let cfg = config();
     assert_eq!(cfg.auth.initial_user_password, "admin123");
   }
 
   #[test]
   fn test_overwrite_initial_user() {
-    base_vars();
     unsafe {
       std::env::set_var("OVERWRITE_INITIAL_USER", "true");
     }
-    let cfg = EnvConfig::parse_from([""]);
+    let cfg = config();
     assert!(cfg.auth.overwrite_initial_user);
   }
 }

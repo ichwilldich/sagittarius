@@ -1,7 +1,7 @@
 use std::path::{self, Path};
 use std::{io::Result, path::PathBuf};
 
-use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
@@ -35,7 +35,7 @@ pub trait Storage {
   }
 }
 
-#[derive(ValueEnum, Clone, Copy, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, Clone, Copy, PartialEq, Debug)]
 pub enum StorageType {
   NoRaid,
 }
