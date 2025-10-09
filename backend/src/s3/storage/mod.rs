@@ -22,6 +22,8 @@ pub trait Storage {
   ) -> Result<()>;
   async fn stream_read_file(&self, path: &Path) -> Result<Box<dyn AsyncRead + Unpin + Send>>;
   async fn delete_file(&self, path: &Path) -> Result<()>;
+  /// if from is relative it will be interpreted as relative to the data directory
+  async fn mv_file(&self, from: &Path, to: &Path) -> Result<()>;
 
   async fn write_file(&self, path: &Path, data: &[u8]) -> Result<()> {
     self.stream_write_file(path, &mut &data[..]).await

@@ -1,10 +1,9 @@
 use axum::{Router, extract::Path, routing::put};
-use centaurus::{error::Result, req::xml::Xml};
+use centaurus::error::Result;
 use http::HeaderMap;
-use serde::Deserialize;
 
 use crate::s3::{
-  auth::{Identity, S3Auth},
+  auth::{Identity, S3Auth, body::TmpFile},
   interface::S3Interface,
 };
 
@@ -15,7 +14,7 @@ pub fn router() -> Router {
 async fn put_object(
   interface: S3Interface,
   Path((bucket, object)): Path<(String, String)>,
-  S3Auth { identity, .. }: S3Auth<Option<Xml<PutObjectConfiguration>>>,
+  S3Auth { identity, body, .. }: S3Auth<TmpFile>,
 ) -> Result<HeaderMap> {
   match identity {
     Identity::AccessKey(key) => {
@@ -32,12 +31,9 @@ async fn put_object(
     object
   );
 
-  interface.put_object(&bucket, &object).await?;
+  interface.put_object(&bucket, &object, &body.0).await?;
 
   let headers = HeaderMap::new();
 
   Ok(headers)
 }
-
-#[derive(Deserialize, Debug)]
-struct PutObjectConfiguration {}

@@ -1,8 +1,8 @@
-use axum::Extension;
+use axum::{Extension, extract::path};
 use centaurus::{FromReqExtension, bail, error::Result, path};
 
 use crate::{config::Config, macros::DualRouterExt, router_extension, s3::BUCKET_DIR};
-use std::{ops::Deref, sync::Arc};
+use std::{ops::Deref, path::Path, sync::Arc};
 
 use crate::s3::storage::Storage;
 
@@ -47,13 +47,13 @@ impl S3Interface {
     Ok(buckets)
   }
 
-  pub async fn put_object(&self, bucket: &String, object: &String) -> Result<()> {
+  pub async fn put_object(&self, bucket: &String, object: &String, body: &Path) -> Result<()> {
     if !self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
       bail!(NOT_FOUND, "Bucket {bucket} not found");
     }
 
     self
-      .write_file(&path!(BUCKET_DIR, bucket, object), &[])
+      .mv_file(body, &path!(BUCKET_DIR, bucket, object))
       .await?;
 
     Ok(())
