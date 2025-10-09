@@ -55,6 +55,11 @@ impl StorageType {
       fs::create_dir_all(&bucket_path).await?;
     }
 
+    let tmp_path = base_path.join(TMP_DIR);
+    if !tmp_path.exists() {
+      fs::create_dir_all(&tmp_path).await?;
+    }
+
     Ok(S3Interface::new(match self {
       StorageType::NoRaid => no_raid::NoRaid::new(base_path),
     }))

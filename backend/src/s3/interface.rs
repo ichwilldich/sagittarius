@@ -51,7 +51,6 @@ impl S3Interface {
     if !self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
       bail!(NOT_FOUND, "Bucket {bucket} not found");
     }
-
     self
       .mv_file(body, &path!(BUCKET_DIR, bucket, object))
       .await?;

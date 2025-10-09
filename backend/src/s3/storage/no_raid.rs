@@ -1,11 +1,13 @@
 use std::{
   io::{Error, ErrorKind, Result},
   path::{self, Path, PathBuf},
+  time::Duration,
 };
 
 use tokio::{
   fs,
   io::{self, AsyncRead},
+  time::sleep,
 };
 
 use crate::s3::storage::Storage;
@@ -86,7 +88,6 @@ impl Storage for NoRaid {
       self.full_path(from).await?
     };
     let full_to = self.full_path(to).await?;
-    dbg!(&full_from, &full_to);
     fs::rename(full_from, full_to).await
   }
 }
