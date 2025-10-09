@@ -1,13 +1,11 @@
 use std::{
   io::{Error, ErrorKind, Result},
   path::{self, Path, PathBuf},
-  time::Duration,
 };
 
 use tokio::{
   fs,
   io::{self, AsyncRead},
-  time::sleep,
 };
 
 use crate::s3::storage::Storage;
