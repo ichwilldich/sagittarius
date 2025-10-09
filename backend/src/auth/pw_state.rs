@@ -19,6 +19,10 @@ use uuid::Uuid;
 use crate::{config::EnvConfig, db::Connection};
 
 const PW_KEY: &str = "password";
+#[cfg(not(test))]
+pub const KEY_SIZE: usize = 4096;
+#[cfg(test)]
+pub const KEY_SIZE: usize = 256;
 
 #[derive(FromReqExtension, Clone)]
 pub struct PasswordState {
@@ -54,7 +58,7 @@ impl PasswordState {
       RsaPrivateKey::from_pkcs1_pem(&key.private_key).expect("Failed to parse private password key")
     } else {
       let mut rng = OsRng {};
-      let private_key = RsaPrivateKey::new(&mut rng, 4096).expect("Failed to create Rsa key");
+      let private_key = RsaPrivateKey::new(&mut rng, KEY_SIZE).expect("Failed to create Rsa key");
       let key = private_key
         .to_pkcs1_pem(LineEnding::CRLF)
         .expect("Failed to export private key")

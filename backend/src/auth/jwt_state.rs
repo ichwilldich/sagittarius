@@ -16,7 +16,10 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{
-  auth::jwt_auth::{AuthSource, COOKIE_NAME},
+  auth::{
+    jwt_auth::{AuthSource, COOKIE_NAME},
+    pw_state::KEY_SIZE,
+  },
   config::EnvConfig,
   db::Connection,
 };
@@ -91,7 +94,7 @@ impl JwtState {
       (key.private_key, key.id.to_string())
     } else {
       let mut rng = OsRng {};
-      let private_key = RsaPrivateKey::new(&mut rng, 4096).expect("Failed to create Rsa key");
+      let private_key = RsaPrivateKey::new(&mut rng, KEY_SIZE).expect("Failed to create Rsa key");
       let key = private_key
         .to_pkcs1_pem(LineEnding::CRLF)
         .expect("Failed to export private key")
