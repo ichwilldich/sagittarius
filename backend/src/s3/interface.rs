@@ -1,4 +1,4 @@
-use axum::{Extension, extract::path};
+use axum::Extension;
 use centaurus::{FromReqExtension, bail, error::Result, path};
 
 use crate::{config::Config, macros::DualRouterExt, router_extension, s3::BUCKET_DIR};
