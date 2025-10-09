@@ -632,8 +632,9 @@ dependencies = [
 
 [[package]]
 name = "centaurus"
-version = "0.2.3"
-source = "git+https://github.com/ProfiiDev/centaurus.git?branch=feat%2Ffigment#2e221f33bf0c8418049410c0b552fba8c3054a85"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fa87d706e69f273874fffab6c4b3bafbac6ddd7ce94067b95c2702a3d44025c"
 dependencies = [
  "argon2",
  "axum",
@@ -665,7 +666,8 @@ dependencies = [
 [[package]]
 name = "centaurus-derive"
 version = "0.1.0"
-source = "git+https://github.com/ProfiiDev/centaurus.git?branch=feat%2Ffigment#2e221f33bf0c8418049410c0b552fba8c3054a85"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4cff23771da27b5c70a187ba9a1245be9d556cb2d309b74521cd89dcdac3f4d"
 dependencies = [
  "quote",
  "syn 2.0.106",

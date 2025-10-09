@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 serde = { workspace = true }
 sea-orm = { workspace = true }
-centaurus = { version = "0.2.3", features = [
+centaurus = { version = "0.2.4", features = [
   "axum",
   "logging",
   "argon2",
@@ -18,7 +18,7 @@ centaurus = { version = "0.2.3", features = [
   "sea-orm",
   "uuid",
   "reqwest",
-], git = "https://github.com/ProfiiDev/centaurus.git", branch = "feat/figment" }
+] }
 uuid = { version = "1.18.1", features = ["v4"] }
 axum = { version = "0.8.4", features = [
   "macros",
