@@ -90,6 +90,7 @@ impl JwtState {
   }
 
   pub async fn init(config: &EnvConfig, db: &Connection) -> Self {
+    println!("Loading JWT key {}", KEY_SIZE);
     let (key, kid) = if let Ok(key) = db.key().get_key_by_name(JWT_KEY_NAME.into()).await {
       (key.private_key, key.id.to_string())
     } else {

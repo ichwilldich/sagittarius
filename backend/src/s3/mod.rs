@@ -15,7 +15,6 @@ pub fn router() -> Router {
 
 router_extension!(
   async fn s3(self, config: &EnvConfig) -> Self {
-    println!("Initializing S3 Interface");
     use interface::interface;
 
     self.interface(config).await

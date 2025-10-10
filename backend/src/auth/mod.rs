@@ -37,7 +37,6 @@ router_extension!(
     app_config: &AppConfig,
     db: &Connection,
   ) -> Self {
-    println!("Initializing Auth");
     self
       .layer(Extension(JwtState::init(config, db).await))
       .layer(Extension(PasswordState::init(config, db).await))
