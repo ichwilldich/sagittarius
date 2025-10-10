@@ -133,6 +133,7 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
 #[cfg(test)]
 mod test {
   use axum::body::Body;
+  use clap::Parser;
 
   use super::*;
 
@@ -173,8 +174,12 @@ mod test {
       .collect::<Vec<_>>()
       .join("&");
 
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+    }
     Request::builder()
       .uri(format!("http://localhost/test.txt?{}", query))
+      .extension(Config::parse_from([""]))
       .body(Body::new("123".to_string()))
       .unwrap()
   }

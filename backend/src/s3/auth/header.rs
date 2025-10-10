@@ -306,12 +306,19 @@ pub fn check_headers(parts: &Parts, auth: &AWS4) -> Result<()> {
 
 #[cfg(test)]
 mod test {
+  use clap::Parser;
+
   use crate::s3::auth::credential::AWS4Credential;
 
   use super::*;
 
   fn request(auth: bool) -> Request {
-    let mut builder = Request::builder().uri("http://localhost/");
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+    }
+    let mut builder = Request::builder()
+      .uri("http://localhost/")
+      .extension(Config::parse_from([""]));
 
     if auth {
       builder = builder.header("Authorization", "AWS4-HMAC-SHA256 Credential=test/21240426/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=e737cff2fc158b249645312df82c5a72abc11a42e7b8a20a41cbff1f9430b4c1");

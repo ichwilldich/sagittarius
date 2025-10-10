@@ -152,8 +152,10 @@ mod test {
 
   #[tokio::test]
   async fn test_tmp_file() {
-    let data_dir = std::env::temp_dir();
-    let mut writer = <TmpFile as Body>::Writer::new(&data_dir).await.unwrap();
+    let tmp_dir = std::env::temp_dir();
+    let data_dir = path!(&tmp_dir, TMP_DIR);
+    tokio::fs::create_dir_all(&data_dir).await.unwrap();
+    let mut writer = <TmpFile as Body>::Writer::new(&tmp_dir).await.unwrap();
     writer.write(b"Hello, ").await.unwrap();
     writer.write(b"world!").await.unwrap();
     let body = <TmpFile as Body>::from_writer(writer).await.unwrap();
@@ -164,6 +166,21 @@ mod test {
 
     drop(body);
 
+    assert!(!path.exists());
+  }
+
+  #[tokio::test]
+  async fn test_tmp_file_cancel() {
+    let tmp_dir = std::env::temp_dir();
+    let data_dir = path!(&tmp_dir, TMP_DIR);
+    tokio::fs::create_dir_all(&data_dir).await.unwrap();
+    let mut writer = <TmpFile as Body>::Writer::new(&tmp_dir).await.unwrap();
+    writer.write(b"Hello, ").await.unwrap();
+    writer.write(b"world!").await.unwrap();
+    let path = writer.1.clone();
+    drop(writer); // Drop without converting to body
+
+    // The file should be deleted
     assert!(!path.exists());
   }
 

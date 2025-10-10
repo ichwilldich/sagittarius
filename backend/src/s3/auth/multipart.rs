@@ -135,6 +135,7 @@ async fn parse_multipart(
 
 #[cfg(test)]
 mod test {
+  use clap::Parser;
   use http::header::CONTENT_TYPE;
   use mime::BOUNDARY;
   use std::io::Write;
@@ -185,12 +186,16 @@ mod test {
     write!(multipart, "Hello, world!\r\n").unwrap();
     write!(multipart, "--{}--\r\n", BOUNDARY).unwrap();
 
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+    }
     Ok(
       Request::builder()
         .header(
           CONTENT_TYPE,
           format!("multipart/form-data; boundary={}", BOUNDARY),
         )
+        .extension(Config::parse_from([""]))
         .body(multipart.into())
         .unwrap(),
     )
@@ -222,11 +227,15 @@ mod test {
     write!(multipart, "Hello, world!\r\n").unwrap();
     write!(multipart, "--{}--\r\n", BOUNDARY).unwrap();
 
+    unsafe {
+      std::env::set_var("STORAGE_PATH", "/tmp/s3");
+    }
     let req = Request::builder()
       .header(
         CONTENT_TYPE,
         format!("multipart/form-data; boundary={}", BOUNDARY),
       )
+      .extension(Config::parse_from([""]))
       .body(multipart.into())
       .unwrap();
 
