@@ -37,7 +37,6 @@ impl App {
     let app_listener = listener_setup(config.base.port).await;
     let s3_listener = listener_setup(config.s3_port).await;
 
-    println!("Setting up routers");
     let (app, s3) = (router(&config).await, s3_router(&config).await)
       .state(config)
       .await;
@@ -82,11 +81,8 @@ router_extension!(
     use frontend::frontend;
     use s3::s3;
 
-    println!("Initializing DB");
     let db = db::init_db(&env_config).await;
-    println!("DB Initialized");
     let app_config = AppConfig::new(&db).await;
-    println!("App Config Initialized");
 
     self
       .s3(&env_config)

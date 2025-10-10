@@ -109,6 +109,7 @@ impl JwtState {
 
       (key, uuid.to_string())
     };
+    println!("Loaded JWT key with kid: {}", kid);
 
     let private_key = RsaPrivateKey::from_pkcs1_pem(&key).expect("Failed to load public key");
     let public_key = RsaPublicKey::from(private_key);
