@@ -21,7 +21,7 @@ jobs:
 
       - uses: taiki-e/install-action@nextest
       - name: "Build and test"
-        run: cargo nextest run --workspace --all-features
+        run: cargo nextest run --workspace --all-features --no-capture
 
       - name: Upload Test Result File
         uses: actions/upload-artifact@v4
