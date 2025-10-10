@@ -16,9 +16,13 @@ use rsa::{
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{config::Config, db::Connection};
+use crate::{config::EnvConfig, db::Connection};
 
 const PW_KEY: &str = "password";
+#[cfg(not(any(test, feature = "test")))]
+pub const KEY_SIZE: usize = 4096;
+#[cfg(any(test, feature = "test"))]
+pub const KEY_SIZE: usize = 512;
 
 #[derive(FromReqExtension, Clone)]
 pub struct PasswordState {
@@ -49,12 +53,15 @@ impl PasswordState {
     Ok(password_hash)
   }
 
-  pub async fn init(config: &Config, db: &Connection) -> Self {
+  pub async fn init(config: &EnvConfig, db: &Connection) -> Self {
     let key = if let Ok(key) = db.key().get_key_by_name(PW_KEY.into()).await {
       RsaPrivateKey::from_pkcs1_pem(&key.private_key).expect("Failed to parse private password key")
     } else {
+      info!(
+        "Generating new RSA key for password encryption with key size {KEY_SIZE}, this may take a while..."
+      );
       let mut rng = OsRng {};
-      let private_key = RsaPrivateKey::new(&mut rng, 4096).expect("Failed to create Rsa key");
+      let private_key = RsaPrivateKey::new(&mut rng, KEY_SIZE).expect("Failed to create Rsa key");
       let key = private_key
         .to_pkcs1_pem(LineEnding::CRLF)
         .expect("Failed to export private key")
@@ -72,7 +79,7 @@ impl PasswordState {
       .to_pkcs1_pem(LineEnding::CRLF)
       .expect("Failed to export Rsa Public Key");
 
-    let pepper = config.auth_pepper.as_bytes().to_vec();
+    let pepper = config.auth.auth_pepper.as_bytes().to_vec();
     if pepper.len() > 32 {
       panic!("Pepper is longer than 32 characters");
     }
@@ -90,29 +97,73 @@ impl PasswordState {
       .await
       .expect("Failed to list users")
       .len();
-    if user_count == 0 || config.overwrite_initial_user {
+    if user_count == 0 || config.auth.overwrite_initial_user {
       let salt = SaltString::generate(OsRng {}).to_string();
       let password = state
-        .pw_hash_raw(&salt, &config.initial_user_password)
+        .pw_hash_raw(&salt, &config.auth.initial_user_password)
         .expect("Failed to hash initial password");
 
       let user = entity::user::Model {
         id: Uuid::new_v4(),
-        name: config.initial_user_username.clone(),
+        name: config.auth.initial_user_username.clone(),
         password,
         salt,
       };
+
+      if let Ok(user) = db.user().get_user_by_name(user.name.clone()).await {
+        db.user()
+          .delete_user(user.id)
+          .await
+          .expect("Failed to overwrite initial user");
+
+        info!(
+          "Initial user '{}' deleted",
+          config.auth.initial_user_username
+        );
+      }
 
       db.user()
         .create_user(user)
         .await
         .expect("Failed to create initial user");
 
-      info!("Initial user '{}' created", config.initial_user_username);
+      info!(
+        "Initial user '{}' created",
+        config.auth.initial_user_username
+      );
     } else {
       info!("Users already exist, skipping initial user creation");
     }
 
     state
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use rsa::pkcs1::DecodeRsaPublicKey;
+
+  use crate::db::test::test_db;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn test_pw_hash() {
+    let config = EnvConfig::default();
+    let db = test_db().await;
+    let pw_state = PasswordState::init(&config, &db).await;
+
+    let key = &pw_state.pub_key;
+    let pub_key = RsaPublicKey::from_pkcs1_pem(key).unwrap();
+    let password = "mysecretpassword";
+    let encrypted = pub_key
+      .encrypt(&mut OsRng {}, Pkcs1v15Encrypt, password.as_bytes())
+      .unwrap();
+    let encrypted_b64 = BASE64_STANDARD.encode(encrypted);
+
+    let salt = SaltString::generate(OsRng {}).to_string();
+    let hashed = pw_state.pw_hash(&salt, &encrypted_b64).unwrap();
+
+    assert!(hashed.starts_with("$argon2"));
   }
 }

@@ -1,4 +1,4 @@
-use crate::{config::Config, router_extension};
+use crate::{config::EnvConfig, router_extension};
 use axum::Router;
 
 mod auth;
@@ -14,7 +14,7 @@ pub fn router() -> Router {
 }
 
 router_extension!(
-  async fn s3(self, config: &Config) -> Self {
+  async fn s3(self, config: &EnvConfig) -> Self {
     use interface::interface;
 
     self.interface(config).await

@@ -7,7 +7,12 @@ use centaurus::{bail, error::Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  auth::{jwt_state::JwtState, pw_state::PasswordState, res::TokenRes},
+  auth::{
+    jwt_auth::InternalAuth,
+    jwt_state::{AuthType, JwtState},
+    pw_state::PasswordState,
+    res::TokenRes,
+  },
   db::Connection,
 };
 
@@ -46,7 +51,7 @@ async fn authenticate(
     bail!(UNAUTHORIZED, "Invalid credentials");
   }
 
-  cookies = cookies.add(jwt.create_token(user.id)?);
+  cookies = cookies.add(jwt.create_token::<InternalAuth>(user.id, AuthType::Internal)?);
 
   Ok((cookies, TokenRes))
 }
