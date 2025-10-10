@@ -3,6 +3,7 @@ use std::{env::set_var, net::TcpListener, time::Duration};
 use backend::App;
 use reqwest::Client;
 use tokio::{spawn, time::sleep};
+use uuid::Uuid;
 
 fn find_port(used: Option<u16>) -> u16 {
   (8000..16000)
@@ -13,7 +14,7 @@ fn find_port(used: Option<u16>) -> u16 {
 pub fn prepare_env() -> Ports {
   let backend_port = find_port(None);
   let s3_port = find_port(Some(backend_port));
-  let storage_path = format!("/tmp/sagittarius-test-{}", backend_port);
+  let storage_path = format!("/tmp/sagittarius-test-{}", Uuid::new_v4());
 
   unsafe {
     set_var("PORT", backend_port.to_string());
