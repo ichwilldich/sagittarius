@@ -3,7 +3,7 @@ use centaurus::init::{
   axum::{add_base_layers, listener_setup, run_app},
   logging::init_logging,
 };
-use tokio::{fs, join};
+use tokio::{fs, join, net::TcpListener};
 use tracing::info;
 
 use crate::{
@@ -20,22 +20,43 @@ mod health;
 mod macros;
 mod s3;
 
-pub async fn app() {
-  let config = EnvConfig::parse();
-  init_logging(&config.base);
-  fs::create_dir_all(&config.storage_path)
-    .await
-    .expect("failed to create storage path");
+pub struct App {
+  app: Router,
+  app_listener: TcpListener,
+  s3: Router,
+  s3_listener: TcpListener,
+}
 
-  let app_listener = listener_setup(config.base.port).await;
-  let s3_listener = listener_setup(config.s3_port).await;
+impl App {
+  pub async fn new() -> App {
+    let config = EnvConfig::parse();
+    init_logging(&config.base);
+    fs::create_dir_all(&config.storage_path)
+      .await
+      .expect("failed to create storage path");
 
-  let (app, s3) = (router(&config).await, s3_router(&config).await)
-    .state(config)
-    .await;
+    let app_listener = listener_setup(config.base.port).await;
+    let s3_listener = listener_setup(config.s3_port).await;
 
-  info!("Starting s3 sever");
-  join!(run_app(app_listener, app), run_app(s3_listener, s3));
+    let (app, s3) = (router(&config).await, s3_router(&config).await)
+      .state(config)
+      .await;
+
+    Self {
+      app,
+      app_listener,
+      s3,
+      s3_listener,
+    }
+  }
+
+  pub async fn run(self) {
+    info!("Starting s3 sever");
+    join!(
+      run_app(self.app_listener, self.app),
+      run_app(self.s3_listener, self.s3)
+    );
+  }
 }
 
 async fn router(config: &EnvConfig) -> Router {

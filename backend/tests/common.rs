@@ -1,6 +1,8 @@
-use std::{env::set_var, net::TcpListener};
+use std::{env::set_var, net::TcpListener, time::Duration};
 
-use tokio::spawn;
+use backend::App;
+use reqwest::Client;
+use tokio::{spawn, time::sleep};
 
 fn find_port(used: Option<u16>) -> u16 {
   (8000..16000)
@@ -32,11 +34,21 @@ pub struct Ports {
 }
 
 pub async fn launch_app() {
-  spawn(backend::app());
+  let app = App::new().await;
+  spawn(app.run());
+  sleep(Duration::from_millis(100)).await; // wait for server to start
 }
 
 pub async fn run() -> Ports {
   let ports = prepare_env();
   launch_app().await;
   ports
+}
+
+pub fn reqwest_client() -> Client {
+  Client::builder()
+    .timeout(Duration::from_secs(10))
+    .connect_timeout(Duration::from_secs(10))
+    .build()
+    .unwrap()
 }
