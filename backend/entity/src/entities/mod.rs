@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod config;
 pub mod invalid_jwt;
 pub mod key;
 pub mod user;

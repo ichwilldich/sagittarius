@@ -11,7 +11,7 @@ use eyre::Context;
 use tracing::instrument;
 
 use crate::{
-  config::Config,
+  config::EnvConfig,
   s3::{
     auth::{
       Identity, S3Auth, SECRET,
@@ -25,7 +25,7 @@ use crate::{
 
 #[instrument]
 pub async fn multipart_auth<T: Body>(mut req: Request) -> Result<S3Auth<T>> {
-  let Ok(config) = req.extract_parts::<Config>().await;
+  let Ok(config) = req.extract_parts::<EnvConfig>().await;
   let multipart = Multipart::from_request(req, &()).await?;
   let mut writer = T::Writer::new(&config.storage_path).await?;
 
@@ -135,7 +135,6 @@ async fn parse_multipart(
 
 #[cfg(test)]
 mod test {
-  use clap::Parser;
   use http::header::CONTENT_TYPE;
   use mime::BOUNDARY;
   use std::io::Write;
@@ -195,7 +194,7 @@ mod test {
           CONTENT_TYPE,
           format!("multipart/form-data; boundary={}", BOUNDARY),
         )
-        .extension(Config::parse_from([""]))
+        .extension(EnvConfig::default())
         .body(multipart.into())
         .unwrap(),
     )
@@ -235,7 +234,7 @@ mod test {
         CONTENT_TYPE,
         format!("multipart/form-data; boundary={}", BOUNDARY),
       )
-      .extension(Config::parse_from([""]))
+      .extension(EnvConfig::default())
       .body(multipart.into())
       .unwrap();
 

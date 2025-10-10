@@ -5,7 +5,7 @@ use futures::StreamExt;
 use tracing::instrument;
 
 use crate::{
-  config::Config,
+  config::EnvConfig,
   s3::{
     auth::{
       Identity, S3Auth, SECRET,
@@ -33,7 +33,7 @@ pub async fn query_auth<T: Body>(req: Request, query: &[(String, String)]) -> Re
     bail!(FORBIDDEN, "Signature mismatch");
   }
 
-  let Ok(config) = parts.extract::<Config>().await;
+  let Ok(config) = parts.extract::<EnvConfig>().await;
 
   let mut writer = T::Writer::new(&config.storage_path).await?;
   let mut stream = body.into_data_stream();
@@ -133,7 +133,6 @@ fn parse_query(query: &[(String, String)]) -> Result<QueryData> {
 #[cfg(test)]
 mod test {
   use axum::body::Body;
-  use clap::Parser;
 
   use super::*;
 
@@ -179,7 +178,7 @@ mod test {
     }
     Request::builder()
       .uri(format!("http://localhost/test.txt?{}", query))
-      .extension(Config::parse_from([""]))
+      .extension(EnvConfig::default())
       .body(Body::new("123".to_string()))
       .unwrap()
   }

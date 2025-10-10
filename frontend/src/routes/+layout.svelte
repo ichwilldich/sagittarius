@@ -1,7 +1,11 @@
 <script lang="ts">
   import '../app.css';
   import AppSidebar from '$lib/components/navbar/sidebar-app/sidebar-app.svelte';
-  import { Sidebar } from 'positron-components/components/ui';
+  import {
+    ModeWatcher,
+    Sidebar,
+    Toaster
+  } from 'positron-components/components/ui';
   import { page } from '$app/state';
 
   interface Props {
@@ -12,6 +16,9 @@
 
   const noLayout = ['/login', '/oauth', '/oauth/logout'];
 </script>
+
+<ModeWatcher />
+<Toaster position="top-right" richColors closeButton />
 
 {#if !noLayout.includes(page.url.pathname)}
   <Sidebar.Provider class="min-h-screen">

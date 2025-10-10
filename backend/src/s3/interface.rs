@@ -1,7 +1,7 @@
 use axum::Extension;
 use centaurus::{FromReqExtension, bail, error::Result, path};
 
-use crate::{config::Config, macros::DualRouterExt, router_extension, s3::BUCKET_DIR};
+use crate::{config::EnvConfig, macros::DualRouterExt, router_extension, s3::BUCKET_DIR};
 use std::{ops::Deref, path::Path, sync::Arc};
 
 use crate::s3::storage::Storage;
@@ -68,7 +68,7 @@ impl Deref for S3Interface {
 }
 
 router_extension!(
-  async fn interface(self, config: &Config) -> Self {
+  async fn interface(self, config: &EnvConfig) -> Self {
     self.layer(Extension(
       config
         .storage_type

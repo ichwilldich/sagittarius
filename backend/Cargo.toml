@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 serde = { workspace = true }
 sea-orm = { workspace = true }
-centaurus = { version = "0.2.2", features = [
+centaurus = { version = "0.2.4", features = [
   "axum",
   "logging",
   "argon2",
@@ -16,6 +16,8 @@ centaurus = { version = "0.2.2", features = [
   "jsonwebtoken",
   "rsa",
   "sea-orm",
+  "uuid",
+  "reqwest",
 ] }
 uuid = { version = "1.18.1", features = ["v4"] }
 axum = { version = "0.8.4", features = [
@@ -26,7 +28,6 @@ axum = { version = "0.8.4", features = [
 ] }
 axum-extra = { version = "0.10.1", features = ["cookie", "typed-header"] }
 tracing-subscriber = "=0.3.19"
-clap = { version = "4.5.47", features = ["derive", "env"] }
 tracing = "0.1.41"
 tower = "0.5.2"
 tower-http = { version = "0.6.6", features = ["fs"] }
@@ -55,6 +56,19 @@ futures = "0.3.31"
 memchr = "2.7.5"
 time = "0.3.44"
 hyper-util = { version = "0.1.17", features = ["client-legacy"] }
+url = "2.5.7"
+reqwest = { version = "0.12.23", features = [
+  "json",
+  "rustls-tls",
+  "charset",
+  "http2",
+  "system-proxy",
+  "multipart",
+], default-features = false }
+figment = { version = "0.10.19", features = ["env", "toml"] }
+
+[features]
+test = []
 
 [[bin]]
 name = "backend"

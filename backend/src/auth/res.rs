@@ -15,3 +15,27 @@ impl IntoResponse for TokenRes {
       .unwrap()
   }
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[tokio::test]
+  async fn test_token_res() {
+    let token_res = TokenRes;
+    let response = token_res.into_response();
+    assert_eq!(
+      response
+        .headers()
+        .get(CACHE_CONTROL)
+        .unwrap()
+        .to_str()
+        .unwrap(),
+      "no-store"
+    );
+    assert_eq!(
+      response.headers().get(PRAGMA).unwrap().to_str().unwrap(),
+      "no-cache"
+    );
+  }
+}

@@ -10,6 +10,7 @@ impl<'db> UserTable<'db> {
     Self { db }
   }
 
+  #[allow(unused)]
   pub async fn get_user(&self, id: Uuid) -> Result<entity::user::Model, sea_orm::DbErr> {
     let res = entity::user::Entity::find_by_id(id).one(self.db).await?;
 
@@ -40,5 +41,74 @@ impl<'db> UserTable<'db> {
     let res = entity::user::Entity::find().all(self.db).await?;
 
     Ok(res)
+  }
+
+  pub async fn delete_user(&self, id: Uuid) -> Result<(), sea_orm::DbErr> {
+    entity::user::Entity::delete_by_id(id).exec(self.db).await?;
+
+    Ok(())
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[tokio::test]
+  async fn test_user_table() {
+    let db = crate::db::test::test_db().await;
+    let user_table = db.user();
+
+    let user_id = Uuid::new_v4();
+    let user_name = "test_user".to_string();
+    let user_password = "hashed_password".to_string();
+    let user_salt = "salt".to_string();
+    let user = user::Model {
+      id: user_id,
+      name: user_name.clone(),
+      password: user_password.clone(),
+      salt: user_salt.clone(),
+    };
+
+    // Test create_user
+    user_table
+      .create_user(user.clone())
+      .await
+      .expect("Failed to create user");
+
+    // Test get_user_by_name
+    let fetched_user = user_table
+      .get_user_by_name(user_name.clone())
+      .await
+      .expect("Failed to fetch user by name");
+    assert_eq!(fetched_user.id, user_id);
+    assert_eq!(fetched_user.name, user_name);
+    assert_eq!(fetched_user.password, user_password);
+    assert_eq!(fetched_user.salt, user_salt);
+
+    // Test get_user
+    let fetched_user_by_id = user_table
+      .get_user(user_id)
+      .await
+      .expect("Failed to fetch user by id");
+    assert_eq!(fetched_user_by_id.id, user_id);
+    assert_eq!(fetched_user_by_id.name, user_name);
+    assert_eq!(fetched_user_by_id.password, user_password);
+    assert_eq!(fetched_user_by_id.salt, user_salt);
+
+    // Test list_users
+    let users = user_table.list_users().await.expect("Failed to list users");
+    assert_eq!(users.len(), 1);
+
+    // Test delete_user
+    user_table
+      .delete_user(user_id)
+      .await
+      .expect("Failed to delete user");
+    let users_after_delete = user_table
+      .list_users()
+      .await
+      .expect("Failed to list users after delete");
+    assert_eq!(users_after_delete.len(), 0);
   }
 }

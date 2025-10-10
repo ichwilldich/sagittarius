@@ -19,7 +19,7 @@ use sha2::{Digest, Sha256};
 use tracing::instrument;
 
 use crate::{
-  config::Config,
+  config::EnvConfig,
   s3::{
     auth::{
       Identity, S3Auth, SECRET,
@@ -67,7 +67,7 @@ pub async fn header_auth<T: BodyTrait>(req: Request) -> Result<S3Auth<T>> {
     check_headers(&parts, auth)?;
   }
 
-  let Ok(config) = parts.extract::<Config>().await;
+  let Ok(config) = parts.extract::<EnvConfig>().await;
 
   let mut writer = T::Writer::new(&config.storage_path).await?;
   let body = if content_hash.is_chunked() {
@@ -306,9 +306,7 @@ pub fn check_headers(parts: &Parts, auth: &AWS4) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-  use clap::Parser;
-
-  use crate::s3::auth::credential::AWS4Credential;
+  use crate::{config::EnvConfig, s3::auth::credential::AWS4Credential};
 
   use super::*;
 
@@ -318,7 +316,7 @@ mod test {
     }
     let mut builder = Request::builder()
       .uri("http://localhost/")
-      .extension(Config::parse_from([""]));
+      .extension(EnvConfig::default());
 
     if auth {
       builder = builder.header("Authorization", "AWS4-HMAC-SHA256 Credential=test/21240426/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=e737cff2fc158b249645312df82c5a72abc11a42e7b8a20a41cbff1f9430b4c1");
