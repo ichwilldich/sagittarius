@@ -73,7 +73,7 @@ async fn router(config: &EnvConfig) -> Router {
         .nest("/auth", auth::router())
         .merge(health::router()),
     )
-    .add_base_layers(&config.base)
+    .add_base_layers_filtered(&config.base, |path| path.starts_with("/api"))
     .await
 }
 

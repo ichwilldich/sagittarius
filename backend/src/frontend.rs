@@ -56,7 +56,7 @@ struct FrontendState {
 }
 
 async fn handler(state: FrontendState, mut req: Request) -> Result<Response, StatusCode> {
-  tracing::info!("Forwarding request to frontend: {}", req.uri());
+  tracing::trace!("Forwarding request to frontend: {}", req.uri());
   let path = req.uri().path();
   let path_query = req
     .uri()
