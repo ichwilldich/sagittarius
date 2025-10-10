@@ -54,6 +54,7 @@ impl PasswordState {
   }
 
   pub async fn init(config: &EnvConfig, db: &Connection) -> Self {
+    println!("Initializing PasswordState");
     let key = if let Ok(key) = db.key().get_key_by_name(PW_KEY.into()).await {
       RsaPrivateKey::from_pkcs1_pem(&key.private_key).expect("Failed to parse private password key")
     } else {

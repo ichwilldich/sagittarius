@@ -34,21 +34,14 @@ pub struct Ports {
 }
 
 pub async fn launch_app() {
-  let start = std::time::Instant::now();
   let app = App::new().await;
-  println!("App initialized in {:?}", start.elapsed());
   spawn(app.run());
-  println!("App spawned in {:?}", start.elapsed());
   sleep(Duration::from_millis(100)).await; // wait for server to start
-  println!("App launched in {:?}", start.elapsed());
 }
 
 pub async fn run() -> Ports {
-  let start = std::time::Instant::now();
   let ports = prepare_env();
-  println!("Prepared env in {:?}", start.elapsed());
   launch_app().await;
-  println!("Prepared env in {:?}", start.elapsed());
   ports
 }
 
