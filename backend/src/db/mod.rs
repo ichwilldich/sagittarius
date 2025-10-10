@@ -58,3 +58,24 @@ impl Connection {
     config::ConfigTable::new(&self.0)
   }
 }
+
+#[cfg(test)]
+pub mod test {
+  use super::*;
+
+  pub async fn test_db() -> Connection {
+    let conn = Database::connect("sqlite::memory:")
+      .await
+      .expect("Failed to connect to database");
+    migration::Migrator::up(&conn, None)
+      .await
+      .expect("Failed to run database migrations");
+
+    Connection(conn)
+  }
+
+  #[tokio::test]
+  async fn test_connection() {
+    let _ = test_db().await;
+  }
+}

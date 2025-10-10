@@ -52,3 +52,22 @@ impl<'db> InvalidJwtTable<'db> {
     Ok(())
   }
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[tokio::test]
+  async fn test_invalid_jwt() {
+    let db = crate::db::test::test_db().await;
+    let token = "test_token".to_string();
+    let exp = Utc::now() + chrono::Duration::hours(1);
+
+    db.invalid_jwt()
+      .invalidate_jwt(token.clone(), exp, &mut 0)
+      .await
+      .unwrap();
+    let is_valid = db.invalid_jwt().is_token_valid(&token).await.unwrap();
+    assert!(!is_valid);
+  }
+}

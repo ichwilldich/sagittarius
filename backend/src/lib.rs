@@ -14,7 +14,6 @@ use crate::{
 mod auth;
 mod config;
 mod db;
-mod example;
 mod frontend;
 mod health;
 mod macros;
@@ -65,8 +64,7 @@ async fn router(config: &EnvConfig) -> Router {
       "/api",
       Router::new()
         .nest("/auth", auth::router())
-        .merge(health::router())
-        .merge(example::router()),
+        .merge(health::router()),
     )
     .add_base_layers(&config.base)
     .await

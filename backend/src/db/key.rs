@@ -31,3 +31,35 @@ impl<'db> KeyTable<'db> {
     Ok(())
   }
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+  use crate::db::test::test_db;
+
+  #[tokio::test]
+  async fn test_key_table() {
+    let db = test_db().await;
+    let key_table = db.key();
+
+    let key_name = "test_key".to_string();
+    let key_value = "private_key_value".to_string();
+    let key_id = Uuid::new_v4();
+
+    // Test create_key
+    key_table
+      .create_key(key_name.clone(), key_value.clone(), key_id)
+      .await
+      .expect("Failed to create key");
+
+    // Test get_key_by_name
+    let fetched_key = key_table
+      .get_key_by_name(key_name.clone())
+      .await
+      .expect("Failed to fetch key by name");
+
+    assert_eq!(fetched_key.name, key_name);
+    assert_eq!(fetched_key.private_key, key_value);
+    assert_eq!(fetched_key.id, key_id);
+  }
+}

@@ -22,7 +22,7 @@ const PW_KEY: &str = "password";
 #[cfg(not(test))]
 pub const KEY_SIZE: usize = 4096;
 #[cfg(test)]
-pub const KEY_SIZE: usize = 256;
+pub const KEY_SIZE: usize = 512;
 
 #[derive(FromReqExtension, Clone)]
 pub struct PasswordState {
@@ -133,5 +133,34 @@ impl PasswordState {
     }
 
     state
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use rsa::pkcs1::DecodeRsaPublicKey;
+
+  use crate::db::test::test_db;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn test_pw_hash() {
+    let config = EnvConfig::default();
+    let db = test_db().await;
+    let pw_state = PasswordState::init(&config, &db).await;
+
+    let key = &pw_state.pub_key;
+    let pub_key = RsaPublicKey::from_pkcs1_pem(key).unwrap();
+    let password = "mysecretpassword";
+    let encrypted = pub_key
+      .encrypt(&mut OsRng {}, Pkcs1v15Encrypt, password.as_bytes())
+      .unwrap();
+    let encrypted_b64 = BASE64_STANDARD.encode(encrypted);
+
+    let salt = SaltString::generate(OsRng {}).to_string();
+    let hashed = pw_state.pw_hash(&salt, &encrypted_b64).unwrap();
+
+    assert!(hashed.starts_with("$argon2"));
   }
 }

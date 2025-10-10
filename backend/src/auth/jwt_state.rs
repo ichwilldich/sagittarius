@@ -26,7 +26,7 @@ use crate::{
 
 const JWT_KEY_NAME: &str = "jwt";
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct JwtClaims {
   pub exp: i64,
   pub iss: String,
@@ -141,4 +141,55 @@ impl JwtState {
 #[derive(FromReqExtension, Clone, Default)]
 pub struct JwtInvalidState {
   pub count: Arc<Mutex<i32>>,
+}
+
+#[cfg(test)]
+mod test {
+  use crate::auth::jwt_auth::InternalAuth;
+  use crate::db::test::test_db;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn test_jwt_state() {
+    let config = EnvConfig::default();
+    let db = test_db().await;
+    let jwt_state = JwtState::init(&config, &db).await;
+    dbg!(&config.auth.jwt_exp);
+    dbg!(&jwt_state.encoding_key);
+
+    let user_id = Uuid::new_v4();
+    let cookie = jwt_state
+      .create_token::<InternalAuth>(user_id, AuthType::Internal)
+      .unwrap();
+    let token = cookie.value().to_string();
+    let claims = jwt_state.validate_token(&token).unwrap();
+    assert_eq!(claims.sub, user_id.to_string());
+    assert_eq!(claims.iss, config.auth.jwt_iss);
+    assert_eq!(claims.r#type, AuthType::Internal);
+  }
+
+  #[tokio::test]
+  async fn test_jwt_state_invalid() {
+    let config = EnvConfig::default();
+    let db = test_db().await;
+    let jwt_state = JwtState::init(&config, &db).await;
+    let invalid_token = "invalid.token.here";
+    let result = jwt_state.validate_token(invalid_token);
+    assert!(result.is_err());
+  }
+
+  #[tokio::test]
+  async fn test_cookie_creation() {
+    let config = EnvConfig::default();
+    let db = test_db().await;
+    let jwt_state = JwtState::init(&config, &db).await;
+
+    let cookie = jwt_state.create_cookie("test_key", "test_value".to_string());
+    assert_eq!(cookie.name(), "test_key");
+    assert_eq!(cookie.value(), "test_value");
+    assert_eq!(cookie.http_only(), Some(true));
+    assert_eq!(cookie.path(), Some("/"));
+    assert_eq!(cookie.same_site(), Some(SameSite::Lax));
+  }
 }
