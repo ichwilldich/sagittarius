@@ -13,6 +13,7 @@ use rsa::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
+use tracing::info;
 use uuid::Uuid;
 
 use crate::{
@@ -90,10 +91,10 @@ impl JwtState {
   }
 
   pub async fn init(config: &EnvConfig, db: &Connection) -> Self {
-    println!("Loading JWT key {}", KEY_SIZE);
     let (key, kid) = if let Ok(key) = db.key().get_key_by_name(JWT_KEY_NAME.into()).await {
       (key.private_key, key.id.to_string())
     } else {
+      info!("Generating new RSA key for JWT with key size {KEY_SIZE}, this may take a while...");
       let mut rng = OsRng {};
       let private_key = RsaPrivateKey::new(&mut rng, KEY_SIZE).expect("Failed to create Rsa key");
       let key = private_key
@@ -110,7 +111,6 @@ impl JwtState {
 
       (key, uuid.to_string())
     };
-    println!("Loaded JWT key with kid: {}", kid);
 
     let private_key = RsaPrivateKey::from_pkcs1_pem(&key).expect("Failed to load public key");
     let public_key = RsaPublicKey::from(private_key);

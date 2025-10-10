@@ -19,9 +19,9 @@ use uuid::Uuid;
 use crate::{config::EnvConfig, db::Connection};
 
 const PW_KEY: &str = "password";
-#[cfg(not(test))]
+#[cfg(not(any(test, feature = "test")))]
 pub const KEY_SIZE: usize = 4096;
-#[cfg(test)]
+#[cfg(any(test, feature = "test"))]
 pub const KEY_SIZE: usize = 512;
 
 #[derive(FromReqExtension, Clone)]
@@ -57,6 +57,9 @@ impl PasswordState {
     let key = if let Ok(key) = db.key().get_key_by_name(PW_KEY.into()).await {
       RsaPrivateKey::from_pkcs1_pem(&key.private_key).expect("Failed to parse private password key")
     } else {
+      info!(
+        "Generating new RSA key for password encryption with key size {KEY_SIZE}, this may take a while..."
+      );
       let mut rng = OsRng {};
       let private_key = RsaPrivateKey::new(&mut rng, KEY_SIZE).expect("Failed to create Rsa key");
       let key = private_key
