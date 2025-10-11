@@ -53,7 +53,7 @@ impl Default for EnvConfig {
   }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DBConfig {
   pub database_max_connections: u32,
   pub database_min_connections: u32,
@@ -72,7 +72,7 @@ impl Default for DBConfig {
   }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct AuthConfig {
   // jwt
   pub jwt_iss: String,

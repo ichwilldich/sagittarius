@@ -4,7 +4,7 @@ use centaurus::init::{
   logging::init_logging,
 };
 use tokio::{fs, join, net::TcpListener};
-use tracing::info;
+use tracing::{info, instrument};
 
 use crate::{
   config::{AppConfig, EnvConfig},
@@ -19,6 +19,7 @@ mod health;
 mod macros;
 mod s3;
 
+#[derive(Debug)]
 pub struct App {
   app: Router,
   app_listener: TcpListener,
@@ -27,6 +28,7 @@ pub struct App {
 }
 
 impl App {
+  #[instrument]
   pub async fn new() -> App {
     let config = EnvConfig::parse();
     init_logging(&config.base);
@@ -49,6 +51,7 @@ impl App {
     }
   }
 
+  #[instrument(skip(self))]
   pub async fn run(self) {
     info!("Starting s3 sever");
     join!(
@@ -65,6 +68,7 @@ impl App {
   }
 }
 
+#[instrument(skip(config))]
 async fn router(config: &EnvConfig) -> Router {
   frontend::router()
     .nest(
@@ -77,6 +81,7 @@ async fn router(config: &EnvConfig) -> Router {
     .await
 }
 
+#[instrument(skip(config))]
 async fn s3_router(config: &EnvConfig) -> Router {
   s3::router().add_base_layers(&config.base).await
 }

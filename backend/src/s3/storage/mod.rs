@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::path::{self, Path};
 use std::{io::Result, path::PathBuf};
 
@@ -13,7 +14,7 @@ pub mod no_raid;
 pub const TMP_DIR: &str = "tmp";
 
 #[async_trait::async_trait]
-pub trait Storage {
+pub trait Storage: Debug {
   async fn create_dir(&self, path: &Path) -> Result<()>;
   async fn delete_dir(&self, path: &Path) -> Result<()>;
   async fn list_dir(&self, path: &Path) -> Result<Vec<String>>;
