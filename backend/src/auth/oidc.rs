@@ -10,7 +10,10 @@ use axum::{
   routing::get,
 };
 use axum_extra::extract::{CookieJar, cookie::Cookie};
-use centaurus::{FromReqExtension, bail, error::Result};
+use centaurus::{
+  FromReqExtension, bail,
+  error::{ErrorReportStatusExt, Result},
+};
 use http::{StatusCode, header::LOCATION};
 use jsonwebtoken::{
   DecodingKey, Validation,
@@ -132,7 +135,8 @@ impl OidcConfig {
     };
 
     let decoding_key = match &jwk.algorithm {
-      AlgorithmParameters::RSA(rsa) => DecodingKey::from_rsa_components(&rsa.n, &rsa.e)?,
+      AlgorithmParameters::RSA(rsa) => DecodingKey::from_rsa_components(&rsa.n, &rsa.e)
+        .status(StatusCode::INTERNAL_SERVER_ERROR)?,
       _ => {
         bail!(INTERNAL_SERVER_ERROR, "Unsupported JWK algorithm");
       }

@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
 use axum_extra::extract::cookie::{Cookie, SameSite};
-use centaurus::{FromReqExtension, error::Result};
+use centaurus::{
+  FromReqExtension,
+  error::{ErrorReportStatusExt, Result},
+};
 use chrono::{Duration, Utc};
-use eyre::ContextCompat;
+use http::StatusCode;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rsa::{
   RsaPrivateKey, RsaPublicKey,
@@ -60,7 +63,7 @@ impl JwtState {
   ) -> Result<Cookie<'c>> {
     let exp = Utc::now()
       .checked_add_signed(Duration::seconds(self.exp))
-      .context("invalid timestamp")?
+      .status_context(StatusCode::INTERNAL_SERVER_ERROR, "invalid timestamp")?
       .timestamp();
 
     let claims = JwtClaims {
@@ -70,7 +73,8 @@ impl JwtState {
       r#type,
     };
 
-    let token = encode(&self.header, &claims, &self.encoding_key)?;
+    let token = encode(&self.header, &claims, &self.encoding_key)
+      .status(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(self.create_cookie(COOKIE_NAME, token))
   }

@@ -1,4 +1,9 @@
+use centaurus::{
+  bail,
+  error::{ErrorReportStatusExt, Result},
+};
 use entity::user;
+use http::StatusCode;
 use sea_orm::prelude::*;
 use tracing::instrument;
 
@@ -13,27 +18,28 @@ impl<'db> UserTable<'db> {
 
   #[allow(unused)]
   #[instrument(skip(self))]
-  pub async fn get_user(&self, id: Uuid) -> Result<entity::user::Model, sea_orm::DbErr> {
+  pub async fn get_user(&self, id: Uuid) -> Result<entity::user::Model> {
     let res = entity::user::Entity::find_by_id(id).one(self.db).await?;
 
-    res.ok_or(sea_orm::DbErr::RecordNotFound("Not Found".into()))
+    res
+      .ok_or(sea_orm::DbErr::RecordNotFound("Not Found".into()))
+      .status(StatusCode::NOT_FOUND)
   }
 
   #[instrument(skip(self))]
-  pub async fn get_user_by_name(
-    &self,
-    name: String,
-  ) -> Result<entity::user::Model, sea_orm::DbErr> {
+  pub async fn get_user_by_name(&self, name: String) -> Result<entity::user::Model> {
     let res = entity::user::Entity::find()
       .filter(user::Column::Name.eq(name))
       .one(self.db)
       .await?;
 
-    res.ok_or(sea_orm::DbErr::RecordNotFound("Not Found".into()))
+    res
+      .ok_or(sea_orm::DbErr::RecordNotFound("Not Found".into()))
+      .status(StatusCode::NOT_FOUND)
   }
 
   #[instrument(skip(self))]
-  pub async fn create_user(&self, user: user::Model) -> Result<(), sea_orm::DbErr> {
+  pub async fn create_user(&self, user: user::Model) -> Result<()> {
     let user: user::ActiveModel = user.into();
 
     user.insert(self.db).await?;
@@ -42,15 +48,18 @@ impl<'db> UserTable<'db> {
   }
 
   #[instrument(skip(self))]
-  pub async fn list_users(&self) -> Result<Vec<user::Model>, sea_orm::DbErr> {
+  pub async fn list_users(&self) -> Result<Vec<user::Model>> {
     let res = entity::user::Entity::find().all(self.db).await?;
 
     Ok(res)
   }
 
   #[instrument(skip(self))]
-  pub async fn delete_user(&self, id: Uuid) -> Result<(), sea_orm::DbErr> {
-    entity::user::Entity::delete_by_id(id).exec(self.db).await?;
+  pub async fn delete_user(&self, id: Uuid) -> Result<()> {
+    let result = entity::user::Entity::delete_by_id(id).exec(self.db).await?;
+    if result.rows_affected == 0 {
+      bail!(NOT_FOUND, "User not found");
+    }
 
     Ok(())
   }
