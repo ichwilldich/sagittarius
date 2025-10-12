@@ -5,9 +5,12 @@ use axum::{
   extract::{FromRequest, Multipart, Request},
 };
 use base64::prelude::*;
-use centaurus::{bail, error::Result};
+use centaurus::{
+  bail,
+  error::{ErrorReportStatusExt, Result},
+};
 use chrono::NaiveDateTime;
-use eyre::Context;
+use http::StatusCode;
 use tracing::instrument;
 
 use crate::{
@@ -112,12 +115,12 @@ async fn parse_multipart(
     // check policy is valid base64
     BASE64_STANDARD
       .decode(&policy)
-      .context("Invalid policy field")?;
+      .status_context(StatusCode::BAD_REQUEST, "Invalid policy field")?;
 
     Some(MultipartAuthInfo {
       _algorithm: algorithm,
       credential: credential.parse()?,
-      _date: NaiveDateTime::parse_from_str(&date, DATE_FORMAT)?,
+      _date: NaiveDateTime::parse_from_str(&date, DATE_FORMAT).status(StatusCode::BAD_REQUEST)?,
       signature,
       policy,
     })

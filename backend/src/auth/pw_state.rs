@@ -6,7 +6,11 @@ use base64::{
   Engine,
   prelude::{BASE64_STANDARD, BASE64_STANDARD_NO_PAD},
 };
-use centaurus::{FromReqExtension, error::Result};
+use centaurus::{
+  FromReqExtension,
+  error::{ErrorReportStatusExt, Result},
+};
+use http::StatusCode;
 use rsa::{
   Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey,
   pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey, EncodeRsaPublicKey},
@@ -34,8 +38,13 @@ pub struct PasswordState {
 impl PasswordState {
   #[instrument(skip(self, password))]
   pub fn pw_hash(&self, salt: &str, password: &str) -> Result<String> {
-    let bytes = BASE64_STANDARD.decode(password)?;
-    let pw_bytes = self.key.decrypt(Pkcs1v15Encrypt, &bytes)?;
+    let bytes = BASE64_STANDARD
+      .decode(password)
+      .status(StatusCode::BAD_REQUEST)?;
+    let pw_bytes = self
+      .key
+      .decrypt(Pkcs1v15Encrypt, &bytes)
+      .status(StatusCode::BAD_REQUEST)?;
     let password = String::from_utf8_lossy(&pw_bytes).to_string();
 
     self.pw_hash_raw(salt, &password)
