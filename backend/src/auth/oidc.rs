@@ -19,7 +19,7 @@ use jsonwebtoken::{
 use reqwest::{Client, redirect::Policy};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
-use tracing::{info, instrument};
+use tracing::{debug, info, instrument};
 use url::Url;
 use uuid::Uuid;
 
@@ -320,6 +320,7 @@ async fn oidc_callback(
       }
       let res: AuthInfo = res.json().await?;
 
+      debug!("OIDC user authenticated: {}", res.sub);
       cookies = cookies.add(jwt.create_token::<AllAuth>(res.sub, AuthType::Oidc)?);
 
       ("/", None)

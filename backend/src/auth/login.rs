@@ -5,7 +5,7 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use centaurus::{bail, error::Result};
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 use crate::{
   auth::{
@@ -50,9 +50,11 @@ async fn authenticate(
   let hash = state.pw_hash(&user.salt, &payload.password)?;
 
   if hash != user.password {
+    debug!("Invalid password for user: {}", user.id);
     bail!(UNAUTHORIZED, "Invalid credentials");
   }
 
+  debug!("User authenticated: {}", user.id);
   cookies = cookies.add(jwt.create_token::<InternalAuth>(user.id, AuthType::Internal)?);
 
   Ok((cookies, TokenRes))

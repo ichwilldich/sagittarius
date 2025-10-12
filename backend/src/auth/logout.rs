@@ -3,7 +3,7 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use centaurus::error::Result;
 use chrono::DateTime;
 use eyre::ContextCompat;
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 use crate::{
   auth::{
@@ -36,6 +36,7 @@ async fn logout(
     )
     .await?;
 
+  debug!("User logged out: {}", auth.user_id);
   cookies = cookies.remove(Cookie::from(COOKIE_NAME));
 
   Ok((cookies, TokenRes))
