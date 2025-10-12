@@ -57,6 +57,23 @@ impl S3Interface {
 
     Ok(())
   }
+
+  pub async fn delete_object(&self, bucket: &String, object: &String) -> Result<()> {
+    if !self.list_dir(&path!(BUCKET_DIR)).await?.contains(bucket) {
+      bail!(NOT_FOUND, "Bucket {bucket} not found");
+    }
+    if !self
+      .list_dir(&path!(BUCKET_DIR, bucket))
+      .await?
+      .contains(object)
+    {
+      bail!(NOT_FOUND, "Object {object} not found in bucket {bucket}");
+    }
+
+    self.delete_file(&path!(BUCKET_DIR, bucket, object)).await?;
+
+    Ok(())
+  }
 }
 
 impl Deref for S3Interface {
