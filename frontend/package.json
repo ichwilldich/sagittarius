@@ -26,7 +26,7 @@
     "tailwind-variants": "3.1.1",
     "tslib": "2.8.1",
     "typescript": "5.9.3",
-    "vite": "7.1.10",
+    "vite": "7.1.11",
     "zod": "4.1.12"
   },
   "dependencies": {
