@@ -642,9 +642,9 @@ dependencies = [
 
 [[package]]
 name = "centaurus"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92666e5eebc39573d874e82c53c5c8e15a7bb1160526d204cc74238cc662761c"
+checksum = "e8a786415f9e59bbcc803077b1efbdddba9ddc723fa2382527ecaa4f81175270"
 dependencies = [
  "argon2",
  "axum",
@@ -662,6 +662,7 @@ dependencies = [
  "reqwest",
  "rsa",
  "sea-orm",
+ "sea-orm-migration",
  "serde",
  "serde-xml-rs",
  "serde_json",
