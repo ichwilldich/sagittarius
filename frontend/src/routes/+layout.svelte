@@ -8,11 +8,7 @@
   } from 'positron-components/components/ui';
   import { page } from '$app/state';
 
-  interface Props {
-    children?: import('svelte').Snippet;
-  }
-
-  let { children }: Props = $props();
+  let { children } = $props();
 
   const noLayout = ['/login', '/oauth', '/oauth/logout'];
 </script>
