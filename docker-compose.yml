@@ -8,7 +8,7 @@ services:
     networks:
       - proxy
     ports:
-      - '5174:5174'
+      - "5174:5174"
     # command: npm install
     command: npm run dev -- --host
     working_dir: /app/frontend
@@ -17,16 +17,16 @@ services:
     image: ghcr.io/profiidev/images/rust-musl-watch:main
     pull_policy: always
     volumes:
-      - .:/app
-      - ./backend/data:/data
+      - ./backend:/app/backend
+    working_dir: /app/backend
     networks:
       - proxy
     ports:
-      - '9000:9000'
-      - '5173:8000'
+      - "9000:9000"
+      - "5173:8000"
     tty: true
-    entrypoint: ['tini', '--']
-    command: ['cargo', 'watch', '-x', 'run', '-C', 'backend']
+    entrypoint: ["tini", "--"]
+    command: ["cargo", "watch", "-x", "run"]
     environment:
       - RUST_LIB_BACKTRACE=0
 
