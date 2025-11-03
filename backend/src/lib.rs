@@ -79,6 +79,13 @@ impl App {
       run_app(self.s3_listener, self.s3)
     );
   }
+
+  pub fn ports(&self) -> (u16, u16) {
+    (
+      self.app_listener.local_addr().unwrap().port(),
+      self.s3_listener.local_addr().unwrap().port(),
+    )
+  }
 }
 
 #[instrument(skip(config))]
