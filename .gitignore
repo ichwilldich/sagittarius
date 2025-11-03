@@ -2,13 +2,6 @@ target/
 node_modules/
 *.env
 
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
-
 *.tsbuildinfo
 
 /postgres/

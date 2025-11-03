@@ -17,7 +17,9 @@ services:
     image: ghcr.io/profiidev/images/rust-musl-watch:main
     pull_policy: always
     volumes:
-      - .:/app
+      - ./backend:/app/backend
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app/backend
     networks:
       - proxy
     ports:
@@ -25,7 +27,7 @@ services:
       - '5173:8000'
     tty: true
     entrypoint: ['tini', '--']
-    command: ['cargo', 'watch', '-x', 'run', '-C', 'backend']
+    command: ['cargo', 'watch', '-x', 'run']
     environment:
       - RUST_LIB_BACKTRACE=0
 
