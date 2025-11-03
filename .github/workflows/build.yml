@@ -38,8 +38,8 @@ jobs:
         id: cache
         with:
           path: cache-mount
-          key: cache-mount-${{ env.IMAGE }}-${{ github.sha }}
-          restore-keys: cache-mount-${{ env.IMAGE }}-
+          key: cache-mount-${{ env.IMAGE }}-sha-${{ github.sha }}
+          restore-keys: cache-mount-${{ env.IMAGE }}-sha-
 
       - name: Restore Docker cache mounts
         uses: reproducible-containers/buildkit-cache-dance@v3
