@@ -1,6 +1,4 @@
 use axum::{RequestPartsExt, extract::Request};
-use centaurus::{bail, error::Result};
-use axum::extract::Request;
 use centaurus::{
   bail,
   error::{ErrorReportStatusExt, Result},
