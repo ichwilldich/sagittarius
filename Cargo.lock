@@ -408,6 +408,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-extra"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5136e6c5e7e7978fe23e9876fb924af2c0f84c72127ac6ac17e7c46f457d362c"
+dependencies = [
+ "axum",
+ "axum-core",
+ "bytes",
+ "cookie",
+ "futures-core",
+ "futures-util",
+ "headers",
+ "http",
+ "http-body",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
 name = "axum-macros"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -425,7 +448,7 @@ dependencies = [
  "argon2",
  "async-trait",
  "axum",
- "axum-extra",
+ "axum-extra 0.12.1",
  "base64",
  "centaurus",
  "chrono",
@@ -648,7 +671,7 @@ checksum = "e8a786415f9e59bbcc803077b1efbdddba9ddc723fa2382527ecaa4f81175270"
 dependencies = [
  "argon2",
  "axum",
- "axum-extra",
+ "axum-extra 0.10.3",
  "base64",
  "centaurus-derive",
  "chrono",
