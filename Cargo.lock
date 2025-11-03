@@ -385,30 +385,6 @@ dependencies = [
 
 [[package]]
 name = "axum-extra"
-version = "0.10.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9963ff19f40c6102c76756ef0a46004c0d58957d87259fc9208ff8441c12ab96"
-dependencies = [
- "axum",
- "axum-core",
- "bytes",
- "cookie",
- "futures-util",
- "headers",
- "http",
- "http-body",
- "http-body-util",
- "mime",
- "pin-project-lite",
- "rustversion",
- "serde_core",
- "tower-layer",
- "tower-service",
- "tracing",
-]
-
-[[package]]
-name = "axum-extra"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5136e6c5e7e7978fe23e9876fb924af2c0f84c72127ac6ac17e7c46f457d362c"
@@ -448,7 +424,7 @@ dependencies = [
  "argon2",
  "async-trait",
  "axum",
- "axum-extra 0.12.1",
+ "axum-extra",
  "base64",
  "centaurus",
  "chrono",
@@ -665,13 +641,14 @@ dependencies = [
 
 [[package]]
 name = "centaurus"
-version = "0.4.0"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8a786415f9e59bbcc803077b1efbdddba9ddc723fa2382527ecaa4f81175270"
+checksum = "142466b0abf131ed2a34eb0fad1cbbcb02fce7dcdfb5aacac3945d26dd5f9b8d"
 dependencies = [
  "argon2",
+ "async-trait",
  "axum",
- "axum-extra 0.10.3",
+ "axum-extra",
  "base64",
  "centaurus-derive",
  "chrono",
