@@ -8,13 +8,19 @@ WORKDIR /app/frontend
 COPY frontend/package.json ./
 COPY package-lock.json package.json ../
 
-RUN npm ci
+RUN \
+  --mount=type=cache,target=/app/node_modules,sharing=locked \
+  --mount=type=cache,target=/app/frontend/node_modules,sharing=locked \
+  npm ci
 
 COPY frontend/svelte.config.js frontend/tsconfig.json frontend/vite.config.ts ./
 COPY frontend/src ./src
 COPY frontend/static ./static
 
-RUN npm run build
+RUN \
+  --mount=type=cache,target=/app/node_modules,sharing=locked \
+  --mount=type=cache,target=/app/frontend/node_modules,sharing=locked \
+  npm run build
 
 FROM ghcr.io/profiidev/images/rust-musl-builder:main AS backend-planner
 
@@ -23,7 +29,10 @@ COPY backend/entity/Cargo.toml backend/entity/
 COPY backend/migration/Cargo.toml backend/migration/
 COPY ./Cargo.lock ./Cargo.toml ./
 
-RUN cargo chef prepare --recipe-path recipe.json --bin backend
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/app/target \
+  cargo chef prepare --recipe-path recipe.json --bin backend
 
 FROM ghcr.io/profiidev/images/rust-musl-builder:main AS backend-builder
 
@@ -32,7 +41,10 @@ ARG FRONTEND_DIR
 
 COPY --from=backend-planner /app/recipe.json .
 
-RUN cargo chef cook --release --target $TARGET
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/app/target \
+  cargo chef cook --release --target $TARGET
 
 COPY backend/Cargo.toml backend/
 COPY backend/build.rs backend/
@@ -43,8 +55,11 @@ COPY backend/migration/Cargo.toml backend/migration/
 COPY backend/migration/src backend/migration/src
 COPY ./Cargo.lock ./Cargo.toml ./
 
-RUN cd backend && cargo build --release --target $TARGET
-RUN mv ./target/$TARGET/release/backend ./app
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/app/target \
+  cd backend && cargo build --release --target $TARGET \
+  && mv ../target/$TARGET/release/backend ../app
 
 FROM node:22-alpine
 
@@ -57,6 +72,6 @@ WORKDIR /app
 COPY --from=frontend-builder /app/frontend/build /app/frontend
 COPY --from=frontend-builder /app/frontend/package.json /app/frontend/package.json
 COPY --from=frontend-builder /app/package-lock.json /app/package-lock.json
-COPY --from=backend-builder /app/app /usr/local/bin/
+COPY --from=backend-builder /app/app /usr/local/bin/sagittarius
 
-CMD ["app"]
+CMD ["sagittarius"]
