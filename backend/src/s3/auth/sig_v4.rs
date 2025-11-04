@@ -410,10 +410,10 @@ mod test {
 
   #[test]
   fn test_sign() {
-    let secret_key = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
+    let secret_key = "testing";
     let credential = &aws4().credential;
     let string_to_sign = sts().sign(secret_key, credential);
-    let expected_signature = "e8c68eaa3147a30f4cde5eca6a0888571e3716ff1856c5cebc916ddcb6a7eb0a";
+    let expected_signature = "f4504f5351d681e3c7d18861e755d429dd2d508603d9152cf574eb2b321052e5";
     assert_eq!(string_to_sign.unwrap(), expected_signature);
   }
 
