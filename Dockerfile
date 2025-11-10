@@ -8,19 +8,13 @@ WORKDIR /app/frontend
 COPY frontend/package.json ./
 COPY package-lock.json package.json ../
 
-RUN \
-  --mount=type=cache,target=/app/node_modules,sharing=locked \
-  --mount=type=cache,target=/app/frontend/node_modules,sharing=locked \
-  npm ci
+RUN npm ci
 
 COPY frontend/svelte.config.js frontend/tsconfig.json frontend/vite.config.ts ./
 COPY frontend/src ./src
 COPY frontend/static ./static
 
-RUN \
-  --mount=type=cache,target=/app/node_modules,sharing=locked \
-  --mount=type=cache,target=/app/frontend/node_modules,sharing=locked \
-  npm run build
+RUN npm run build
 
 FROM ghcr.io/profiidev/images/rust-musl-builder:main AS backend-planner
 
