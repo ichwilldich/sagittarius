@@ -1,7 +1,7 @@
 ARG TARGET=x86_64-unknown-linux-musl
 ARG FRONTEND_DIR=/app/frontend
 
-FROM node:22-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -61,7 +61,7 @@ RUN \
   cd backend && cargo build --release --target $TARGET \
   && mv ../target/$TARGET/release/backend ../app
 
-FROM node:22-alpine
+FROM node:24-alpine
 
 ARG FRONTEND_DIR
 ENV STORAGE_PATH=/data
