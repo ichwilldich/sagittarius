@@ -1,9 +1,9 @@
 <script lang="ts">
   import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
   import { HardDrive, FileText, Server, Activity } from '@lucide/svelte/icons';
-  import { Chart } from 'positron-components/components/ui';
-  import { Card } from 'positron-components/components/ui';
-  import { Select } from 'positron-components/components/ui';
+  import * as Chart from 'positron-components/components/ui/chart';
+  import * as Card from 'positron-components/components/ui/card';
+  import * as Select from 'positron-components/components/ui/select';
   import { PieChart, Text } from 'layerchart';
   import { scaleUtc } from 'd3-scale';
   import { Area, AreaChart, ChartClipPath } from 'layerchart';
@@ -334,7 +334,7 @@
       </div>
       <Select.Root type="single" bind:value={timeRange}>
         <Select.Trigger
-          class="w-[160px] rounded-lg sm:ml-auto"
+          class="w-40 rounded-lg sm:ml-auto"
           aria-label="Zeitraum auswählen"
         >
           {selectedLabel}

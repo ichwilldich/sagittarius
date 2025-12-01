@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, Folder, Plus, BarChart3 } from '@lucide/svelte';
-  import { Card, Button, Input } from 'positron-components/components/ui';
+  import { Button } from 'positron-components/components/ui/button';
+  import { Input } from 'positron-components/components/ui/input';
+  import * as Card from 'positron-components/components/ui/card';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
 
@@ -158,7 +160,7 @@
                   onclick={() => handleBucketClick(bucket)}
                 >
                   <div class="flex w-full items-center gap-3">
-                    <Folder class="h-4 w-4 flex-shrink-0" />
+                    <Folder class="h-4 w-4 shrink-0" />
                     <div class="flex min-w-0 flex-1 flex-col items-start">
                       <span
                         class="w-full truncate text-left text-sm font-medium"

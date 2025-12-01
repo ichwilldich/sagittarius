@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Folder, Database, Plus } from '@lucide/svelte';
-  import { Card, Button } from 'positron-components/components/ui';
+  import { Button } from 'positron-components/components/ui/button';
+  import * as Card from 'positron-components/components/ui/card';
 
   function handleNewBucket() {
     console.log('Create new bucket');
