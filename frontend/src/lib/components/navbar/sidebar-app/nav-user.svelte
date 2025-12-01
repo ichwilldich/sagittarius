@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { Avatar } from 'positron-components/components/ui';
-  import { DropdownMenu } from 'positron-components/components/ui';
-  import { Sidebar } from 'positron-components/components/ui';
+  import * as Avatar from 'positron-components/components/ui/avatar';
+  // @ts-ignore
+  import * as DropdownMenu from 'positron-components/components/ui/dropdown-menu';
+  import * as Sidebar from 'positron-components/components/ui/sidebar';
   import BadgeCheckIcon from '@lucide/svelte/icons/badge-check';
   import BellIcon from '@lucide/svelte/icons/bell';
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
   import CreditCardIcon from '@lucide/svelte/icons/credit-card';
   import LogOutIcon from '@lucide/svelte/icons/log-out';
   import SparklesIcon from '@lucide/svelte/icons/sparkles';
-  import { Ungroup } from '@lucide/svelte';
   let { user }: { user: { name: string; email: string; avatar: string } } =
     $props();
   let sidebar = Sidebar.useSidebar();
@@ -18,7 +18,8 @@
   <Sidebar.MenuItem>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        {#snippet child({ props }: { props: Record<string, unknown> })}
+        <!-- prettier-ignore -->
+        {#snippet child({ props }: { props: Record<string, any> })}
           <Sidebar.MenuButton
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"

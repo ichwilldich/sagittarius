@@ -1,11 +1,9 @@
 <script lang="ts">
   import '../app.css';
   import AppSidebar from '$lib/components/navbar/sidebar-app/sidebar-app.svelte';
-  import {
-    ModeWatcher,
-    Sidebar,
-    Toaster
-  } from 'positron-components/components/ui';
+  import * as Sidebar from 'positron-components/components/ui/sidebar';
+  import { ModeWatcher } from 'positron-components/components/util/general';
+  import { Toaster } from 'positron-components/components/ui/sonner';
   import { page } from '$app/state';
 
   let { children } = $props();

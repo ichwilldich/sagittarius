@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sidebar } from 'positron-components/components/ui';
+  import * as Sidebar from 'positron-components/components/ui/sidebar';
   import { Database } from '@lucide/svelte';
   // This should be `Component` after @lucide/svelte updates types
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

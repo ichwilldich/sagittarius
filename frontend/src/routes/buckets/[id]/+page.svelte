@@ -24,18 +24,16 @@
     Copy,
     Share,
     Eye,
-    RefreshCw,
-    Plus
+    RefreshCw
   } from '@lucide/svelte';
-  import {
-    Card,
-    Badge,
-    Button,
-    Input,
-    Separator,
-    DropdownMenu,
-    Tabs
-  } from 'positron-components/components/ui';
+  import * as Card from 'positron-components/components/ui/card';
+  // @ts-ignore
+  import * as DropdownMenu from 'positron-components/components/ui/dropdown-menu';
+  import * as Tabs from 'positron-components/components/ui/tabs';
+  import { Badge } from 'positron-components/components/ui/badge';
+  import { Button } from 'positron-components/components/ui/button';
+  import { Input } from 'positron-components/components/ui/input';
+  import { Separator } from 'positron-components/components/ui/separator';
 
   import { page } from '$app/state';
 
@@ -547,7 +545,7 @@
                         onclick={() => handleFileClick(file)}
                       >
                         <IconComponent
-                          class="text-muted-foreground h-5 w-5 flex-shrink-0"
+                          class="text-muted-foreground h-5 w-5 shrink-0"
                         />
                         <span class="truncate font-medium">{file.name}</span>
                       </button>

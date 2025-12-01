@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sidebar } from 'positron-components/components/ui';
+  import * as Sidebar from 'positron-components/components/ui/sidebar';
   let {
     items
   }: {

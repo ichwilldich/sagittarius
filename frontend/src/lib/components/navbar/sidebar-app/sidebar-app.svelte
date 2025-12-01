@@ -29,7 +29,7 @@
   import NavMain from './nav-main.svelte';
   import NavUser from './nav-user.svelte';
   import TeamSwitcher from './team-switcher.svelte';
-  import { Sidebar } from 'positron-components/components/ui';
+  import * as Sidebar from 'positron-components/components/ui/sidebar';
   import type { ComponentProps } from 'svelte';
   let {
     ref = $bindable(null),
