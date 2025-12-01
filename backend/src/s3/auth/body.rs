@@ -1,6 +1,9 @@
-use std::{fmt::Debug, path::PathBuf};
+use std::{
+  fmt::Debug,
+  path::{Path, PathBuf},
+};
 
-use centaurus::{error::Result, req::xml::Xml};
+use centaurus::{error::Result, path, req::xml::Xml};
 use serde::Deserialize;
 use tokio::{
   fs::{File, OpenOptions},
@@ -8,6 +11,8 @@ use tokio::{
 };
 use tracing::instrument;
 use uuid::Uuid;
+
+use crate::s3::storage::TMP_DIR;
 
 #[async_trait::async_trait]
 pub trait Body: Sized {
@@ -23,13 +28,21 @@ pub trait Body: Sized {
 pub struct TmpFile(pub PathBuf);
 #[derive(Debug)]
 #[allow(unused)]
-pub struct FileWriter(File, PathBuf);
+pub struct FileWriter(File, PathBuf, bool);
 
 impl Drop for TmpFile {
   #[instrument]
   fn drop(&mut self) {
     if self.0.exists() {
       let _ = std::fs::remove_file(&self.0);
+    }
+  }
+}
+
+impl Drop for FileWriter {
+  fn drop(&mut self) {
+    if self.2 && self.1.exists() {
+      let _ = std::fs::remove_file(&self.1);
     }
   }
 }
@@ -48,10 +61,13 @@ impl Body for TmpFile {
   type Writer = FileWriter;
 
   #[instrument]
-  async fn from_writer(writer: Self::Writer) -> Result<Self> {
+  async fn from_writer(mut writer: Self::Writer) -> Result<Self> {
     writer.0.sync_all().await?;
-    drop(writer.0);
-    Ok(TmpFile(writer.1))
+    let path = writer.1.clone();
+    writer.2 = false; // Prevent deletion on
+    drop(writer);
+
+    Ok(TmpFile(path))
   }
 }
 
@@ -87,13 +103,13 @@ where
 
 #[async_trait::async_trait]
 pub trait BodyWriter: Sized + Debug {
-  async fn new() -> Result<Self>;
+  async fn new(data_dir: &Path) -> Result<Self>;
   async fn write(&mut self, buf: &[u8]) -> Result<()>;
 }
 
 #[async_trait::async_trait]
 impl BodyWriter for () {
-  async fn new() -> Result<Self> {
+  async fn new(_: &Path) -> Result<Self> {
     Ok(())
   }
 
@@ -104,15 +120,15 @@ impl BodyWriter for () {
 
 #[async_trait::async_trait]
 impl BodyWriter for FileWriter {
-  async fn new() -> Result<Self> {
-    let path = std::env::temp_dir().join(format!("sagittarius-{}", Uuid::new_v4()));
+  async fn new(data_dir: &Path) -> Result<Self> {
+    let path = path!(data_dir, TMP_DIR, Uuid::new_v4().to_string());
     let file = OpenOptions::new()
       .create_new(true)
       .read(true)
       .append(true)
       .open(&path)
       .await?;
-    Ok(FileWriter(file, path))
+    Ok(FileWriter(file, path, true))
   }
 
   async fn write(&mut self, buf: &[u8]) -> Result<()> {
@@ -124,7 +140,7 @@ impl BodyWriter for FileWriter {
 
 #[async_trait::async_trait]
 impl BodyWriter for Vec<u8> {
-  async fn new() -> Result<Self> {
+  async fn new(_: &Path) -> Result<Self> {
     Ok(Vec::new())
   }
 
@@ -140,7 +156,10 @@ mod test {
 
   #[tokio::test]
   async fn test_tmp_file() {
-    let mut writer = <TmpFile as Body>::Writer::new().await.unwrap();
+    let tmp_dir = std::env::temp_dir();
+    let data_dir = path!(&tmp_dir, TMP_DIR);
+    tokio::fs::create_dir_all(&data_dir).await.unwrap();
+    let mut writer = <TmpFile as Body>::Writer::new(&tmp_dir).await.unwrap();
     writer.write(b"Hello, ").await.unwrap();
     writer.write(b"world!").await.unwrap();
     let body = <TmpFile as Body>::from_writer(writer).await.unwrap();
@@ -155,8 +174,24 @@ mod test {
   }
 
   #[tokio::test]
+  async fn test_tmp_file_cancel() {
+    let tmp_dir = std::env::temp_dir();
+    let data_dir = path!(&tmp_dir, TMP_DIR);
+    tokio::fs::create_dir_all(&data_dir).await.unwrap();
+    let mut writer = <TmpFile as Body>::Writer::new(&tmp_dir).await.unwrap();
+    writer.write(b"Hello, ").await.unwrap();
+    writer.write(b"world!").await.unwrap();
+    let path = writer.1.clone();
+    drop(writer); // Drop without converting to body
+
+    // The file should be deleted
+    assert!(!path.exists());
+  }
+
+  #[tokio::test]
   async fn test_vec_u8() {
-    let mut writer = <<Vec<u8> as Body>::Writer as BodyWriter>::new()
+    let data_dir = std::env::temp_dir();
+    let mut writer = <<Vec<u8> as Body>::Writer as BodyWriter>::new(&data_dir)
       .await
       .unwrap();
     <Vec<u8> as BodyWriter>::write(&mut writer, b"Hello, ")
