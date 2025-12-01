@@ -24,7 +24,7 @@
     Copy,
     Share,
     Eye,
-    RefreshCw,
+    RefreshCw
   } from '@lucide/svelte';
   import * as Card from 'positron-components/components/ui/card';
   // @ts-ignore
