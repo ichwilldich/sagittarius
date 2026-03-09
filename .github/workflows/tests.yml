@@ -24,7 +24,7 @@ jobs:
         run: cargo nextest run --workspace --all-features
 
       - name: Upload Test Result File
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-rust
           path: ${{ github.workspace }}/target/nextest/default/junit.xml
@@ -40,7 +40,7 @@ jobs:
       - rust-tests
     steps:
       - name: Download Test Results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: test-results-*
           merge-multiple: true
