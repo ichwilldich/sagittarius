@@ -26,7 +26,7 @@ jobs:
       - uses: bahmutov/npm-install@v1
 
       - name: Run linters
-        uses: profiidev/rust-lint-action@v3
+        uses: profiidev/rust-lint-action@v4
         with:
           rustfmt: true
           clippy: true
